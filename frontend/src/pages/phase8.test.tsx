@@ -130,6 +130,39 @@ describe('konuşmak istediğim konular', () => {
   })
 })
 
+describe('AI ibaresi', () => {
+  it('is shown on the client summary detail, outside the topics section', async () => {
+    mockFetch({ 'GET /summaries/s1': { body: summary({ topics: ['Uyku'] }) } })
+    renderDetail()
+    const note = await screen.findByTestId('ai-disclaimer')
+    expect(note).toHaveTextContent('Bu özet, kendi kayıtlarından AI ile düzenlenmiştir. Teşhis veya tedavi önerisi içermez.')
+    expect(screen.getByRole('region', { name: 'Konuşmak istediğim konular' })).not.toContainElement(note)
+  })
+
+  it('is shown on the clinician shared summary', async () => {
+    const shared: SharedSummary = {
+      id: 's1',
+      client_id: 'c1',
+      title: 'Özet',
+      body: 'gövde',
+      period_start: null,
+      period_end: null,
+      shared_at: '2026-11-15T10:00:00Z',
+      created_at: '2026-11-15T10:00:00Z',
+      topics: [],
+    }
+    mockFetch({ 'GET /clinician/summaries/s1': { body: shared } })
+    render(
+      <MemoryRouter initialEntries={['/clinician/summaries/s1']}>
+        <Routes>
+          <Route path="/clinician/summaries/:id" element={<ClinicianSummaryDetail />} />
+        </Routes>
+      </MemoryRouter>,
+    )
+    expect(await screen.findByTestId('ai-disclaimer')).toHaveTextContent('danışanın kendi kayıtlarından AI ile düzenlenmiştir')
+  })
+})
+
 describe('hatırlatma şeridi', () => {
   const r = (over: Partial<Reminder>): Reminder => ({
     kind: 'prepare_summary',

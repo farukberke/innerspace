@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { clinicianApi } from '../../api/endpoints'
+import { AiDisclaimer } from '../../components/AiDisclaimer'
 import { Alert, Button, Card, Empty, formatDate, formatDateTime, PageHeader, Spinner } from '../../components/ui'
 import { useLoad } from '../../hooks/useLoad'
 import { InviteForm } from '../InviteForm'
@@ -94,6 +95,7 @@ export function ClinicianSummaryDetail() {
       <Card>
         <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-800">{data.body}</p>
       </Card>
+      <AiDisclaimer audience="clinician" />
       {data.topics.length > 0 && (
         <section aria-labelledby="topics-title" className="mt-4">
           <Card>
