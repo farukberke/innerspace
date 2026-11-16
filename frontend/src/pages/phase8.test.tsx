@@ -130,6 +130,34 @@ describe('konuşmak istediğim konular', () => {
   })
 })
 
+describe('clinician shared summary body', () => {
+  it('renders section headings and statements instead of raw markdown', async () => {
+    const shared = {
+      id: 's1',
+      client_id: 'c1',
+      title: 'Özet',
+      body: ['## Atak kayıtları', '- Bu dönemde 2 atak kaydı var.', '', '## Günlük notlar', '- Uyku kötü.'].join('\n'),
+      period_start: null,
+      period_end: null,
+      shared_at: '2026-11-15T10:00:00Z',
+      created_at: '2026-11-15T10:00:00Z',
+      topics: [],
+    }
+    mockFetch({ 'GET /clinician/summaries/s1': { body: shared } })
+    render(
+      <MemoryRouter initialEntries={['/clinician/summaries/s1']}>
+        <Routes>
+          <Route path="/clinician/summaries/:id" element={<ClinicianSummaryDetail />} />
+        </Routes>
+      </MemoryRouter>,
+    )
+    expect(await screen.findByRole('heading', { name: 'Atak kayıtları' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Günlük notlar' })).toBeInTheDocument()
+    expect(screen.getByText('Bu dönemde 2 atak kaydı var.')).toBeInTheDocument()
+    expect(screen.queryByText(/##|^- /)).not.toBeInTheDocument()
+  })
+})
+
 describe('AI ibaresi', () => {
   it('is shown on the client summary detail, outside the topics section', async () => {
     mockFetch({ 'GET /summaries/s1': { body: summary({ topics: ['Uyku'] }) } })

@@ -76,6 +76,27 @@ export function ClinicianSummaries() {
   )
 }
 
+interface BodySection {
+  heading: string | null
+  items: string[]
+}
+
+/** The backend renders `body` as "## section" headings followed by "- statement" lines. */
+export function parseSummaryBody(body: string): BodySection[] {
+  const sections: BodySection[] = []
+  for (const raw of body.split(/\r?\n/)) {
+    const line = raw.trim()
+    if (!line) continue
+    if (line.startsWith('## ')) {
+      sections.push({ heading: line.slice(3).trim(), items: [] })
+      continue
+    }
+    if (sections.length === 0) sections.push({ heading: null, items: [] })
+    sections[sections.length - 1].items.push(line.startsWith('- ') ? line.slice(2) : line)
+  }
+  return sections
+}
+
 export function ClinicianSummaryDetail() {
   const { id = '' } = useParams()
   const { data, error, loading } = useLoad(useCallback(() => clinicianApi.summary(id), [id]))
@@ -93,7 +114,20 @@ export function ClinicianSummaryDetail() {
         {formatDate(data.period_start)} – {formatDate(data.period_end)}
       </p>
       <Card>
-        <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-ink">{data.body}</p>
+        <div className="space-y-4">
+          {parseSummaryBody(data.body).map((sec, i) => (
+            <section key={i}>
+              {sec.heading && <h2 className="text-xs font-medium uppercase tracking-wide text-muted">{sec.heading}</h2>}
+              <ul className="mt-1 space-y-1 text-sm leading-relaxed text-ink">
+                {sec.items.map((t, j) => (
+                  <li key={j} className="break-words">
+                    {t}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
+        </div>
       </Card>
       <AiDisclaimer audience="clinician" />
       {data.topics.length > 0 && (
