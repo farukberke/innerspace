@@ -118,6 +118,12 @@ class Summary(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         ForeignKey("appointments.id", ondelete="SET NULL")
     )
 
+    # "Konuşmak istediğim konular": the client's own items (never AI-written), each passing
+    # the guardrails. Shown to the clinician only while the summary is shared.
+    topics: Mapped[list[str]] = mapped_column(
+        JSONB, default=list, server_default=text("'[]'::jsonb")
+    )
+
     statements: Mapped[list["SummaryStatement"]] = relationship(
         order_by="SummaryStatement.position",
         cascade="all, delete-orphan",

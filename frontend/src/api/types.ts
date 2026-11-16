@@ -85,6 +85,8 @@ export interface Summary {
   shared_at: string | null
   created_at: string
   appointment_id: string | null
+  /** The client's own "topics to talk about" (never AI-written). */
+  topics: string[]
 }
 
 export interface SummaryListItem {
@@ -99,6 +101,16 @@ export interface SummaryListItem {
 
 export interface SharedSummary extends SummaryListItem {
   body: string
+  topics: string[]
+}
+
+export type ReminderKind = 'prepare_summary' | 'after_session_note'
+
+export interface Reminder {
+  kind: ReminderKind
+  message: string
+  appointment_id: string
+  scheduled_at: string
 }
 
 export interface CrisisInfo {

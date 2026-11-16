@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.api import (
+    account,
     admin,
     ai,
     appointments,
@@ -92,4 +93,5 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(ai.router, prefix=API_PREFIX)
     app.include_router(appointments.router, prefix=API_PREFIX)
     app.include_router(plans.router, prefix=API_PREFIX)
+    app.include_router(account.router, prefix=API_PREFIX)
     return app

@@ -131,6 +131,15 @@ class SummaryUpdate(BaseModel):
     statements: Annotated[list[StatementEdit], Field(max_length=100)] = []
 
 
+Topic = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
+
+
+class TopicsUpdate(BaseModel):
+    """The client's own "topics to talk about" (replaces the list; at most 10 of 200 chars)."""
+
+    topics: Annotated[list[Topic], Field(max_length=10)]
+
+
 class StatementRead(BaseModel):
     id: uuid.UUID
     section: str
@@ -153,6 +162,7 @@ class SummaryRead(BaseModel):
     shared_at: datetime | None
     created_at: datetime
     appointment_id: uuid.UUID | None = None
+    topics: list[str] = []
 
     @classmethod
     def from_model(cls, summary: Summary) -> Self:
@@ -177,6 +187,7 @@ class SummaryRead(BaseModel):
             shared_at=summary.shared_at,
             created_at=summary.created_at,
             appointment_id=summary.appointment_id,
+            topics=list(summary.topics),
         )
 
 
@@ -198,6 +209,7 @@ class SharedSummaryRead(SummaryListItem):
     """Clinician detail. Deliberately no citations: the client's raw entries stay private."""
 
     body: str
+    topics: list[str] = []
 
 
 class CrisisResponse(BaseModel):

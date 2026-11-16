@@ -1,19 +1,29 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Body, HTTPException, status
+from fastapi import APIRouter, Body, Depends, HTTPException, Response, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import CurrentClient, CurrentClinician, SessionDep
+from app.ai.crisis import CRISIS_MESSAGE, CRISIS_RESOURCES
+from app.api.deps import CurrentClient, CurrentClinician, SessionDep, limit_per_user
+from app.models import User
 from app.schemas.care import (
     ClientRead,
+    CrisisResponse,
     SharedSummaryRead,
     SummaryListItem,
     SummaryRead,
     SummaryUpdate,
+    TopicsUpdate,
 )
-from app.services import appointments, people
+from app.services import appointments, people, plans
 from app.services import summaries as service
-from app.services.errors import ConflictError, NotFoundError, ValidationFailedError
+from app.services.errors import (
+    ConflictError,
+    CrisisDetectedError,
+    NotFoundError,
+    ValidationFailedError,
+)
 
 router = APIRouter(tags=["summaries"])
 
@@ -56,6 +66,33 @@ async def update_summary(
         raise HTTPException(status.HTTP_409_CONFLICT, exc.message) from None
     except ValidationFailedError as exc:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, exc.message) from None
+    return SummaryRead.from_model(summary)
+
+
+async def _crisis(session: AsyncSession, client: User) -> CrisisResponse:
+    contacts = await plans.crisis_contacts(session, client)
+    return CrisisResponse(message=CRISIS_MESSAGE, resources=CRISIS_RESOURCES, contacts=contacts)
+
+
+@router.put("/summaries/{summary_id}/topics", dependencies=[Depends(limit_per_user("topics"))])
+async def update_topics(
+    response: Response,
+    session: SessionDep,
+    client: CurrentClient,
+    summary_id: uuid.UUID,
+    data: Annotated[TopicsUpdate, Body()],
+) -> SummaryRead | CrisisResponse:
+    try:
+        summary = await service.set_topics(session, client, summary_id, data.topics)
+    except NotFoundError:
+        raise _not_found() from None
+    except ConflictError as exc:
+        raise HTTPException(status.HTTP_409_CONFLICT, exc.message) from None
+    except ValidationFailedError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, exc.message) from None
+    except CrisisDetectedError:
+        response.status_code = status.HTTP_200_OK
+        return await _crisis(session, client)
     return SummaryRead.from_model(summary)
 
 

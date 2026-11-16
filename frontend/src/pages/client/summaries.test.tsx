@@ -122,6 +122,7 @@ const draft: Summary = {
   shared_at: null,
   created_at: '2026-11-15T10:00:00Z',
   appointment_id: null,
+  topics: [],
 }
 
 function renderDetail() {

@@ -4,6 +4,7 @@ import { Layout } from './components/Layout'
 import { AcceptInvitation } from './pages/AcceptInvitation'
 import { AdminAssignments, AdminUsers } from './pages/admin/Admin'
 import { AfterSession } from './pages/client/AfterSession'
+import { Account } from './pages/client/Account'
 import { Appointments } from './pages/client/Appointments'
 import { Entries } from './pages/client/Entries'
 import { Moment } from './pages/client/Moment'
@@ -28,6 +29,7 @@ export function App() {
           <Route path="/client/after-session" element={<AfterSession />} />
           <Route path="/client/appointments" element={<Appointments />} />
           <Route path="/client/plan" element={<Plan />} />
+          <Route path="/client/account" element={<Account />} />
           <Route path="/client/moment" element={<Moment />} />
         </Route>
       </Route>

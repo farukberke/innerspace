@@ -7,10 +7,16 @@ from datetime import UTC, datetime
 from sqlalchemy import Select, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.ai.crisis import contains_crisis_language
 from app.ai.guardrails import find_violations
 from app.models import CareAssignment, Summary, SummaryStatement, SummaryStatus, User
 from app.services import audit
-from app.services.errors import ConflictError, NotFoundError, ValidationFailedError
+from app.services.errors import (
+    ConflictError,
+    CrisisDetectedError,
+    NotFoundError,
+    ValidationFailedError,
+)
 
 GUARDRAIL_MESSAGE = "The text must not contain a diagnosis or medication, dose or treatment advice"
 
@@ -105,12 +111,48 @@ async def update_draft(
     return summary
 
 
+async def set_topics(
+    session: AsyncSession, client: User, summary_id: uuid.UUID, topics: list[str]
+) -> Summary:
+    """The client's own "topics to talk about". Same edit rule as the statements: not while
+    shared; saving returns the summary to `draft` (re-approval). The text is untrusted input:
+    crisis language yields the fixed crisis response (nothing saved), and the guardrails apply."""
+    summary = await get_own(session, client, summary_id)
+    if summary.status == SummaryStatus.SHARED:
+        raise ConflictError("Revoke sharing before editing this summary")
+    if contains_crisis_language(*topics):
+        await audit.record(
+            session,
+            "ai.crisis_detected",
+            organization_id=client.organization_id,
+            actor_id=client.id,
+            detail={"source": "topics"},
+        )
+        await session.commit()
+        raise CrisisDetectedError
+    if find_violations(*topics):
+        raise ValidationFailedError(GUARDRAIL_MESSAGE)
+    summary.topics = list(topics)
+    summary.status = SummaryStatus.DRAFT
+    summary.approved_at = None
+    await audit.record(
+        session,
+        "summary.topics_update",
+        organization_id=client.organization_id,
+        actor_id=client.id,
+        target_type="summary",
+        target_id=summary.id,
+    )
+    await session.commit()
+    return summary
+
+
 async def approve(session: AsyncSession, client: User, summary_id: uuid.UUID) -> Summary:
     """The client's review step: nothing can be shared before it. Idempotent."""
     summary = await get_own(session, client, summary_id)
     if summary.status != SummaryStatus.DRAFT:
         return summary
-    if find_violations(summary.title, summary.body):
+    if find_violations(summary.title, summary.body, *summary.topics):
         raise ValidationFailedError(GUARDRAIL_MESSAGE)
     summary.status = SummaryStatus.APPROVED
     summary.approved_at = datetime.now(UTC)

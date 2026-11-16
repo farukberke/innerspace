@@ -13,6 +13,7 @@ import type {
   InvitationCreated,
   Plan,
   PlanContent,
+  Reminder,
   SharedPlan,
   SharedSummary,
   Summary,
@@ -55,6 +56,9 @@ export const summariesApi = {
   get: (id: string) => request<Summary>(`/summaries/${id}`),
   update: (id: string, body: { title?: string; statements: { id: string; text: string }[] }) =>
     request<Summary>(`/summaries/${id}`, { method: 'PATCH', body }),
+  /** 200 with a Summary = saved; 200 with `crisis: true` = crisis response (nothing saved). */
+  setTopics: (id: string, topics: string[]) =>
+    request<Summary | CrisisInfo>(`/summaries/${id}/topics`, { method: 'PUT', body: { topics } }),
   approve: (id: string) => request<Summary>(`/summaries/${id}/approve`, { method: 'POST' }),
   share: (id: string) => request<Summary>(`/summaries/${id}/share`, { method: 'POST' }),
   unshare: (id: string) => request<Summary>(`/summaries/${id}/unshare`, { method: 'POST' }),
@@ -102,6 +106,18 @@ export const planApi = {
   save: (body: PlanContent) => request<Plan>('/plan', { method: 'PUT', body }),
   share: () => request<Plan>('/plan/share', { method: 'POST' }),
   unshare: () => request<Plan>('/plan/unshare', { method: 'POST' }),
+}
+
+export const remindersApi = {
+  list: () => request<Reminder[]>('/reminders'),
+}
+
+export const accountApi = {
+  /** The caller's own data (profile, entries, summaries, notes, plan, appointments). */
+  export: () => request<unknown>('/account/export'),
+  /** Permanent. Needs the password and the typed word "SİL". 204 on success. */
+  remove: (password: string) =>
+    request<void>('/account', { method: 'DELETE', body: { password, confirmation: 'SİL' } }),
 }
 
 export const invitationsApi = {

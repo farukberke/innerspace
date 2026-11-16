@@ -1,5 +1,5 @@
 import { useCallback, useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { errorMessage } from '../../api/client'
 import { appointmentsApi, summariesApi } from '../../api/endpoints'
 import type { SummaryJob, SummaryStatus } from '../../api/types'
@@ -22,11 +22,11 @@ export const STATUS_TONE: Record<SummaryStatus, 'amber' | 'indigo' | 'green' | '
 
 const iso = (d: Date) => d.toISOString().slice(0, 10)
 
-function GeneratePanel({ onFinished }: { onFinished: () => void }) {
+function GeneratePanel({ onFinished, initialAppointmentId = '' }: { onFinished: () => void; initialAppointmentId?: string }) {
   const today = new Date()
   const [start, setStart] = useState(iso(new Date(today.getTime() - 14 * 86400000)))
   const [end, setEnd] = useState(iso(today))
-  const [appointmentId, setAppointmentId] = useState('')
+  const [appointmentId, setAppointmentId] = useState(initialAppointmentId)
   // Optional: the appointments to prepare for. A failed load just leaves the dates-only form.
   const { data: appointments } = useLoad(useCallback(() => appointmentsApi.list(), []))
   const [job, setJob] = useState<SummaryJob | null>(null)
@@ -88,7 +88,9 @@ function GeneratePanel({ onFinished }: { onFinished: () => void }) {
 }
 
 export function Summaries() {
-  const [creating, setCreating] = useState(false)
+  // A reminder links here with ?appointment=<id>: the generate form opens with it selected.
+  const preselected = useSearchParams()[0].get('appointment') ?? ''
+  const [creating, setCreating] = useState(preselected !== '')
   const load = useCallback(() => summariesApi.list(), [])
   const { data, error, loading, reload } = useLoad(load)
 
@@ -97,7 +99,7 @@ export function Summaries() {
       <PageHeader title="Özetlerim" actions={<Button onClick={() => setCreating((c) => !c)}>{creating ? 'Kapat' : 'Yeni özet'}</Button>} />
       {creating && (
         <Card className="mb-5">
-          <GeneratePanel onFinished={reload} />
+          <GeneratePanel onFinished={reload} initialAppointmentId={preselected} />
         </Card>
       )}
       {error && <Alert>{error}</Alert>}

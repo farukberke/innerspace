@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { errorMessage } from '../../api/client'
 import { summariesApi } from '../../api/endpoints'
 import type { Summary } from '../../api/types'
+import { TopicsSection } from '../../components/TopicsSection'
 import { Alert, Badge, Button, Card, formatDate, formatDateTime, PageHeader, Spinner, TextArea, TextField } from '../../components/ui'
 import { useLoad } from '../../hooks/useLoad'
 import { STATUS_LABEL, STATUS_TONE } from './Summaries'
@@ -105,6 +106,8 @@ export function SummaryDetail() {
           </div>
         )}
       </Card>
+
+      <TopicsSection summary={summary} onSaved={setOverride} />
 
       {!editing && (
         <div className="flex flex-wrap gap-2">

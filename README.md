@@ -8,7 +8,9 @@
 
 ## Status
 
-🚧 **Active development.** Phases 1 (backend foundation), 2 (authentication & authorization), 3 (AI summaries), 4 (background jobs), 5 (evaluation, rate limiting, observability) and the React frontend are complete; Phase 6 (Docker, CI, Render Blueprint) and Phase 7 (appointments, support plan) are done; the live deployment itself has not been created yet.
+🚧 **Active development.** Phases 1 (backend foundation), 2 (authentication & authorization), 3 (AI summaries), 4 (background jobs), 5 (evaluation, rate limiting, observability) and the React frontend are complete; Phase 6 (Docker, CI, Render Blueprint), Phase 7 (appointments, support plan) and Phase 8 (summary topics, in-app reminders, data export and account deletion) are done.
+
+**Live demo:** https://innerspace-web.onrender.com (synthetic data only; demo accounts are created by the seed script, credentials are not published here).
 
 ## Roadmap
 
@@ -22,6 +24,7 @@
 | 5 | AI evaluation, rate limiting, observability, LLM tracing | ✅ Done |
 | 6 | Docker, CI/CD, Render deployment | ✅ Done (Blueprint ready; deploy is a manual step) |
 | 7 | Appointments (clinician-managed, read-only for clients) and "Planım" support plan with the "O an" card | ✅ Done |
+| 8 | Summary topics, in-app reminders, data export and account deletion | ✅ Done |
 | — | React + TypeScript frontend, built alongside the backend | ✅ Done (client, clinician and clinic-admin screens) |
 
 ## What it does (planned v1)
@@ -32,7 +35,11 @@
 | **Prepare** | AI-assisted pre-appointment summary — every statement links back to the client's own entries |
 | **Review & share** | Nothing leaves the client's account without explicit approval; sharing is revocable |
 | **After session** | Short note structured into "what we discussed / what I'll try / questions for next time" |
-| **My plan** | Support plan authored with the clinician, available in difficult moments |
+| **My plan** | Support plan ("Planım") written by the client, with an "O an" card for difficult moments; optionally shared read-only with the clinician |
+| **Appointments** | Managed by the assigned clinician, read-only for the client; a summary can be prepared for a specific appointment |
+| **Topics to talk about** | The client adds their own topics to a summary (never AI-written, same guardrails and crisis handling); the clinician sees them only on a shared summary |
+| **Reminders** | Calm in-app nudges (no notifications): an appointment tomorrow without a prepared summary, or yesterday's session without a note |
+| **Data rights** | Clients can download all their data as JSON and permanently delete their account (password + typed confirmation); the audit log keeps only a content-free event |
 
 **Multi-tenant B2B2C model:** clinic (organization) → clinicians → clients. Clinicians only see summaries their clients explicitly share; clinic admins see no clinical content at all.
 

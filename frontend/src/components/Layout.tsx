@@ -20,6 +20,7 @@ const NAV: Record<UserRole, { to: string; label: string }[]> = {
     { to: '/client/appointments', label: 'Randevularım' },
     { to: '/client/plan', label: 'Planım' },
     { to: '/client/after-session', label: 'Seans sonrası' },
+    { to: '/client/account', label: 'Hesabım' },
   ],
   clinician: [
     { to: '/clinician/clients', label: 'Danışanlarım' },

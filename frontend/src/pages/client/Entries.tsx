@@ -4,6 +4,7 @@ import { entriesApi } from '../../api/endpoints'
 import type { Entry, EntryKind } from '../../api/types'
 import { Alert, Badge, Button, Card, Empty, formatDateTime, PageHeader, SelectField, Spinner } from '../../components/ui'
 import { useLoad } from '../../hooks/useLoad'
+import { ReminderStrip } from '../../components/ReminderStrip'
 import { EntryForm, KIND_LABEL } from './EntryForm'
 
 const PAGE = 10
@@ -49,6 +50,7 @@ export function Entries() {
   return (
     <div>
       <PageHeader title="Kayıtlarım" actions={editing ? null : <Button onClick={() => setEditing('new')}>Yeni kayıt</Button>} />
+      {!editing && <ReminderStrip />}
       {editing && (
         <Card className="mb-5">
           <EntryForm entry={editing === 'new' ? undefined : editing} onSaved={saved} onCancel={() => setEditing(null)} />

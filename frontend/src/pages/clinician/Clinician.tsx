@@ -94,6 +94,22 @@ export function ClinicianSummaryDetail() {
       <Card>
         <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-800">{data.body}</p>
       </Card>
+      {data.topics.length > 0 && (
+        <section aria-labelledby="topics-title" className="mt-4">
+          <Card>
+            <h2 id="topics-title" className="text-sm font-semibold text-slate-800">
+              Danışanın konuşmak istediği konular
+            </h2>
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-800">
+              {data.topics.map((t, i) => (
+                <li key={i} className="break-words">
+                  {t}
+                </li>
+              ))}
+            </ul>
+          </Card>
+        </section>
+      )}
       <p className="mt-3 text-xs text-slate-500">Bu özet danışan tarafından onaylanıp seninle paylaşıldı; danışan paylaşımı geri alabilir.</p>
     </div>
   )
