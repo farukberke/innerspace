@@ -1,0 +1,32 @@
+[project]
+name = "innerspace-backend"
+version = "0.1.0"
+description = "InnerSpace backend API"
+requires-python = ">=3.13,<3.14"
+# Runtime dependencies are added in Phase 1, only when the code uses them.
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "ruff",
+    "pre-commit",
+]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+# E/F: errors, I: import order, B: likely bugs, UP: modern syntax, S: security checks
+select = ["E", "F", "I", "B", "UP", "S"]
+
+[tool.ruff.lint.per-file-ignores]
+# `assert` is the normal way to check results in pytest.
+"tests/**" = ["S101"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

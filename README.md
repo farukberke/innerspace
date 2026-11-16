@@ -1,0 +1,56 @@
+# InnerSpace
+
+**A between-sessions notebook for people in therapy or psychiatric care.** Clients log what happens between appointments, and an AI assistant helps them turn their own entries into a short, source-cited summary they review, approve and choose to share with their clinician.
+
+> [!WARNING]
+> **Portfolio / demo project.** InnerSpace uses **synthetic data only**. It is not a medical device, does not diagnose, and does not provide treatment or crisis support. Do not enter real personal or health information.
+> If you are in crisis, contact your local emergency number (112 in Türkiye).
+
+## Status
+
+🚧 **Active development — Phase 0: Project setup.** See the [roadmap](docs/yol-haritasi.md) and [progress log](docs/ilerleme.md) (in Turkish).
+
+## What it does (planned v1)
+
+| | |
+|---|---|
+| **Log** | Quick entries, panic episode logs, medication & side-effect notes, avoidance notes |
+| **Prepare** | AI-assisted pre-appointment summary — every statement links back to the client's own entries |
+| **Review & share** | Nothing leaves the client's account without explicit approval; sharing is revocable |
+| **After session** | Short note structured into "what we discussed / what I'll try / questions for next time" |
+| **My plan** | Support plan authored with the clinician, available in difficult moments |
+
+**Multi-tenant B2B2C model:** clinic (organization) → clinicians → clients. Clinicians only see summaries their clients explicitly share; clinic admins see no clinical content at all.
+
+## Engineering principles
+
+- **The LLM is never an authorization mechanism.** Access control, data scoping and business rules are enforced by the backend; AI tools only receive data the current user is allowed to see.
+- **Human-in-the-loop** for every AI output that leaves the client's account.
+- **Validated AI output:** structured schemas, citation checks against real entries, forbidden-content guardrails (no diagnosis, no medication or treatment advice).
+- **User-written text is untrusted input** (prompt-injection aware).
+- **Organization-level data isolation**, covered by authorization tests.
+- No sensitive content in logs or LLM traces.
+
+## Tech stack
+
+**Backend:** Python, FastAPI, Pydantic, SQLAlchemy, Alembic, PostgreSQL
+**AI:** Pydantic AI, structured outputs, tool calling, guardrails, evaluation
+**Frontend:** React, TypeScript, Tailwind CSS
+**Ops:** Docker, GitHub Actions, AWS
+**Tooling:** uv, ruff, pytest, pre-commit, gitleaks
+
+## Development setup
+
+Requirements: [uv](https://docs.astral.sh/uv/), Git.
+
+```bash
+cd backend
+uv sync                       # installs Python 3.13 and dependencies
+uv run pre-commit install     # enables secret scanning and lint checks before each commit
+```
+
+Copy `.env.example` to `.env` for local configuration. Never commit `.env`.
+
+## License
+
+Copyright © 2026. All rights reserved. The source is public for review; no license is granted for reuse.
