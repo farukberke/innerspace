@@ -18,3 +18,16 @@ class InvalidInvitationError(Exception):
 
 class PermissionDeniedError(Exception):
     pass
+
+
+class ValidationFailedError(Exception):
+    """A business-rule validation failed (guardrail, empty period, bad edit target)."""
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+        self.message = message
+
+
+class CrisisDetectedError(Exception):
+    """Crisis language found in user text: no AI content is produced, the fixed crisis response
+    is shown instead."""

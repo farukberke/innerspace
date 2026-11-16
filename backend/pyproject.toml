@@ -8,6 +8,7 @@ dependencies = [
     "argon2-cffi>=25.1.0",
     "asyncpg>=0.32.0",
     "fastapi>=0.163.1",
+    "pydantic-ai-slim[anthropic]>=2.68.0",
     "pydantic-settings>=2.16.3",
     "pyjwt>=2.15.1",
     "sqlalchemy[asyncio]>=2.1.8",

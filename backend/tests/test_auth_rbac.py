@@ -16,7 +16,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import Settings
 from app.core.db import create_engine
 from app.core.security import JWT_ALGORITHM, TokenType, create_token
-from app.models import AuditLog, CareAssignment, Invitation, Organization, User, UserRole
+from app.models import (
+    AuditLog,
+    CareAssignment,
+    Invitation,
+    Organization,
+    Summary,
+    SummaryStatus,
+    User,
+    UserRole,
+)
 from tests.conftest import TEST_JWT_SECRET, TEST_PASSWORD
 
 API = "/api/v1"
@@ -154,7 +163,11 @@ PROTECTED = [
     ("GET", "/summaries"),
     ("GET", f"/summaries/{uuid.uuid4()}"),
     ("POST", f"/summaries/{uuid.uuid4()}/unshare"),
-    ("POST", "/summaries"),
+    ("POST", "/summaries/generate"),
+    ("POST", f"/summaries/{uuid.uuid4()}/approve"),
+    ("PATCH", f"/summaries/{uuid.uuid4()}"),
+    ("POST", "/after-session-notes"),
+    ("GET", "/after-session-notes"),
     ("POST", f"/summaries/{uuid.uuid4()}/share"),
     ("GET", "/clinician/clients"),
     ("GET", "/clinician/summaries"),
@@ -244,10 +257,22 @@ async def test_only_the_client_sees_raw_entries(http: AsyncClient, acting, w: Wo
 
 
 async def _summary(http: AsyncClient, acting, client: User) -> str:
+    """An approved summary (AI generation itself is covered in test_ai.py)."""
+    summary = Summary(
+        organization_id=client.organization_id,
+        client_id=client.id,
+        title="Week",
+        body="Synthetic text",
+        status=SummaryStatus.DRAFT,
+    )
+    session = acting.session
+    assert session is not None
+    session.add(summary)
+    await session.flush()
     acting.user = client
-    response = await http.post(f"{API}/summaries", json={"title": "Week", "body": "Synthetic text"})
-    assert response.status_code == 201, response.text
-    return response.json()["id"]
+    response = await http.post(f"{API}/summaries/{summary.id}/approve")
+    assert response.status_code == 200, response.text
+    return str(summary.id)
 
 
 async def test_summary_sharing_lifecycle(

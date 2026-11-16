@@ -7,9 +7,12 @@ from datetime import UTC, datetime
 from sqlalchemy import Select, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import CareAssignment, Summary, User
+from app.ai.guardrails import find_violations
+from app.models import CareAssignment, Summary, SummaryStatement, SummaryStatus, User
 from app.services import audit
-from app.services.errors import NotFoundError
+from app.services.errors import ConflictError, NotFoundError, ValidationFailedError
+
+GUARDRAIL_MESSAGE = "The text must not contain a diagnosis or medication, dose or treatment advice"
 
 
 def _owned_by(client: User) -> Select[tuple[Summary]]:
@@ -34,18 +37,9 @@ def _shared_with(clinician: User) -> Select[tuple[Summary]]:
             User.is_active.is_(True),
             Summary.organization_id == clinician.organization_id,
             CareAssignment.clinician_id == clinician.id,
-            Summary.shared_at.is_not(None),
+            Summary.status == SummaryStatus.SHARED,
         )
     )
-
-
-async def create_summary(session: AsyncSession, client: User, title: str, body: str) -> Summary:
-    summary = Summary(
-        organization_id=client.organization_id, client_id=client.id, title=title, body=body
-    )
-    session.add(summary)
-    await session.commit()
-    return summary
 
 
 async def list_own(session: AsyncSession, client: User) -> list[Summary]:
@@ -60,12 +54,93 @@ async def get_own(session: AsyncSession, client: User, summary_id: uuid.UUID) ->
     return summary
 
 
+def render_body(statements: list[SummaryStatement]) -> str:
+    """Plain-text body derived from the statements (grouped by consecutive section)."""
+    lines: list[str] = []
+    current: str | None = None
+    for st in sorted(statements, key=lambda x: x.position):
+        if st.section != current:
+            current = st.section
+            lines += ["", f"## {current}"] if lines else [f"## {current}"]
+        lines.append(f"- {st.text}")
+    return "\n".join(lines)
+
+
+async def update_draft(
+    session: AsyncSession,
+    client: User,
+    summary_id: uuid.UUID,
+    title: str | None,
+    edits: dict[uuid.UUID, str],
+) -> Summary:
+    """Client edits an AI draft. The edited text passes the same guardrails as AI output, and
+    the summary returns to `draft` so it must be approved again."""
+    summary = await get_own(session, client, summary_id)
+    if summary.status == SummaryStatus.SHARED:
+        raise ConflictError("Revoke sharing before editing this summary")
+    by_id = {st.id: st for st in summary.statements}
+    if not edits.keys() <= by_id.keys():
+        raise ValidationFailedError("Unknown statement id")
+    if find_violations(*edits.values(), *([title] if title else [])):
+        raise ValidationFailedError(GUARDRAIL_MESSAGE)
+    if title:
+        summary.title = title
+    for statement_id, text in edits.items():
+        by_id[statement_id].text = text
+    summary.body = render_body(summary.statements) if summary.statements else summary.body
+    summary.status = SummaryStatus.DRAFT
+    summary.approved_at = None
+    await audit.record(
+        session,
+        "summary.edit",
+        organization_id=client.organization_id,
+        actor_id=client.id,
+        target_type="summary",
+        target_id=summary.id,
+    )
+    await session.commit()
+    return summary
+
+
+async def approve(session: AsyncSession, client: User, summary_id: uuid.UUID) -> Summary:
+    """The client's review step: nothing can be shared before it. Idempotent."""
+    summary = await get_own(session, client, summary_id)
+    if summary.status != SummaryStatus.DRAFT:
+        return summary
+    if find_violations(summary.title, summary.body):
+        raise ValidationFailedError(GUARDRAIL_MESSAGE)
+    summary.status = SummaryStatus.APPROVED
+    summary.approved_at = datetime.now(UTC)
+    await audit.record(
+        session,
+        "summary.approve",
+        organization_id=client.organization_id,
+        actor_id=client.id,
+        target_type="summary",
+        target_id=summary.id,
+    )
+    await session.commit()
+    return summary
+
+
 async def set_shared(
     session: AsyncSession, client: User, summary_id: uuid.UUID, shared: bool
 ) -> Summary:
-    """Sharing is the client's explicit approval; unsharing revokes clinician access."""
+    """Sharing is the client's explicit second decision, possible only after approval;
+    revoking removes clinician access. Both are idempotent."""
     summary = await get_own(session, client, summary_id)
-    summary.shared_at = datetime.now(UTC) if shared else None
+    if shared:
+        if summary.status == SummaryStatus.DRAFT:
+            raise ConflictError("Approve the summary before sharing it")
+        if summary.status == SummaryStatus.SHARED:
+            return summary
+        summary.status = SummaryStatus.SHARED
+        summary.shared_at = datetime.now(UTC)
+    else:
+        if summary.status != SummaryStatus.SHARED:
+            return summary
+        summary.status = SummaryStatus.REVOKED
+        summary.shared_at = None
     await audit.record(
         session,
         "summary.share" if shared else "summary.unshare",

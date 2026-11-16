@@ -29,6 +29,15 @@ class Settings(BaseSettings):
     invitation_hours: int = Field(default=72, ge=1)
     seed_password: SecretStr | None = None  # demo seed only
 
+    # AI. Without an API key the AI endpoints answer 503. The key only ever comes from the env.
+    llm_model: str = "anthropic:claude-sonnet-5-5"  # "<provider>:<model>"; only anthropic for now
+    anthropic_api_key: SecretStr | None = None
+    llm_max_retries: int = Field(default=2, ge=0, le=5)  # guardrail / validation re-generations
+    llm_timeout_seconds: float = Field(default=60, gt=0)
+    # Estimated price in USD per million tokens, for cost tracking only.
+    llm_input_usd_per_mtok: float = Field(default=3.0, ge=0)
+    llm_output_usd_per_mtok: float = Field(default=15.0, ge=0)
+
     @field_validator("jwt_secret")
     @classmethod
     def _reject_placeholder_secret(cls, value: SecretStr) -> SecretStr:

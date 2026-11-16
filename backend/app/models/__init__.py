@@ -1,11 +1,22 @@
 from app.models.appointment import Appointment, AppointmentKind
 from app.models.base import Base
-from app.models.care import AuditLog, CareAssignment, Invitation, Summary
+from app.models.care import (
+    AfterSessionNote,
+    AuditLog,
+    CareAssignment,
+    Invitation,
+    LlmUsage,
+    Summary,
+    SummaryCitation,
+    SummaryStatement,
+    SummaryStatus,
+)
 from app.models.entry import Entry, EntryKind
 from app.models.organization import Organization
 from app.models.user import User, UserRole
 
 __all__ = [
+    "AfterSessionNote",
     "Appointment",
     "AppointmentKind",
     "AuditLog",
@@ -14,8 +25,12 @@ __all__ = [
     "Entry",
     "EntryKind",
     "Invitation",
+    "LlmUsage",
     "Organization",
     "Summary",
+    "SummaryCitation",
+    "SummaryStatement",
+    "SummaryStatus",
     "User",
     "UserRole",
 ]

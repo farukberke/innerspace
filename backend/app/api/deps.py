@@ -3,8 +3,10 @@ from typing import Annotated
 
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from pydantic_ai.models import Model
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.ai.llm import AiUnavailableError, build_model
 from app.core.config import Settings
 from app.core.db import session_scope
 from app.core.security import TokenError, TokenType, decode_token
@@ -70,3 +72,17 @@ def require_role(role: UserRole) -> Callable[[User], Awaitable[User]]:
 CurrentClient = Annotated[User, Depends(require_role(UserRole.CLIENT))]
 CurrentClinician = Annotated[User, Depends(require_role(UserRole.CLINICIAN))]
 CurrentOrgAdmin = Annotated[User, Depends(require_role(UserRole.ORG_ADMIN))]
+
+
+def get_llm_model(settings: SettingsDep) -> Model:
+    """The configured LLM. Without an API key every AI endpoint answers 503. Tests override
+    this dependency, so they never reach a real provider."""
+    try:
+        return build_model(settings)
+    except AiUnavailableError:
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE, "AI features are not available"
+        ) from None
+
+
+LlmModelDep = Annotated[Model, Depends(get_llm_model)]

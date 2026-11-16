@@ -11,11 +11,13 @@ from pathlib import Path
 import pytest
 from alembic.config import Config
 from httpx import ASGITransport, AsyncClient
+from pydantic_ai import models
+from pydantic_ai.models import Model
 from sqlalchemy import make_url
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
 
 from alembic import command
-from app.api.deps import get_session
+from app.api.deps import get_llm_model, get_session
 from app.core.config import Settings, get_settings
 from app.core.security import TokenType, create_token, hash_password
 from app.main import create_app
@@ -23,6 +25,9 @@ from app.models import Organization, User, UserRole
 
 TEST_JWT_SECRET = "test-secret-test-secret-test-secret-0123456789"  # noqa: S105
 TEST_PASSWORD = "correct-horse-battery"  # noqa: S105
+
+# Safety net: any attempt to call a real model provider raises instead of sending a request.
+models.ALLOW_MODEL_REQUESTS = False
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 
@@ -34,7 +39,12 @@ def _test_database_url() -> str:
 
 @pytest.fixture(scope="session")
 def test_settings() -> Settings:
-    return Settings(app_env="test", database_url=_test_database_url(), jwt_secret=TEST_JWT_SECRET)
+    return Settings(
+        app_env="test",
+        database_url=_test_database_url(),
+        jwt_secret=TEST_JWT_SECRET,
+        anthropic_api_key=None,  # tests must never be able to reach a real provider
+    )
 
 
 @pytest.fixture(scope="session")
@@ -136,6 +146,7 @@ class ActingUser:
         self._settings = settings
         self._client: AsyncClient | None = None
         self._user: User | None = None
+        self.session: AsyncSession | None = None  # the test's DB session (for arranging data)
 
     @property
     def user(self) -> User | None:
@@ -157,16 +168,36 @@ def acting(test_settings: Settings) -> ActingUser:
     return ActingUser(test_settings)
 
 
+class FakeLlm:
+    """Stands in for the configured LLM: set `model` (e.g. a pydantic-ai FunctionModel) to
+    enable the AI endpoints in a test. Unset = no API key configured (503)."""
+
+    def __init__(self) -> None:
+        self.model: Model | None = None
+
+
+@pytest.fixture
+def llm() -> FakeLlm:
+    return FakeLlm()
+
+
 @pytest.fixture
 async def http(
-    test_settings: Settings, db_session: AsyncSession, acting: ActingUser
+    test_settings: Settings, db_session: AsyncSession, acting: ActingUser, llm: FakeLlm
 ) -> AsyncIterator[AsyncClient]:
     app = create_app(test_settings)
 
     async def _session() -> AsyncIterator[AsyncSession]:
         yield db_session
 
+    def _model() -> Model:
+        if llm.model is None:
+            return get_llm_model(test_settings)  # raises 503: no API key in tests
+        return llm.model
+
     app.dependency_overrides[get_session] = _session
+    app.dependency_overrides[get_llm_model] = _model
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         acting._client = client
+        acting.session = db_session
         yield client

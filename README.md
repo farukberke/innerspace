@@ -8,7 +8,7 @@
 
 ## Status
 
-🚧 **Active development.** Phases 1 (backend foundation) and 2 (authentication & authorization) are complete; Phase 3 (AI summaries) is next.
+🚧 **Active development.** Phases 1 (backend foundation), 2 (authentication & authorization) and 3 (AI summaries) are complete; Phase 4 (background jobs) is next.
 
 ## Roadmap
 
@@ -17,8 +17,8 @@
 | 0 | Repository, tooling, secret scanning | ✅ Done |
 | 1 | FastAPI app, PostgreSQL, SQLAlchemy models, Alembic, entry CRUD, structured logging | ✅ Done |
 | 2 | JWT auth, roles, RBAC, organization-level isolation, authorization tests | ✅ Done |
-| 3 | AI summaries: structured output, citations, guardrails, human-in-the-loop sharing | ⏭ Next |
-| 4 | Background jobs (Redis, Celery), retries, idempotency | |
+| 3 | AI summaries: structured output, citations, guardrails, human-in-the-loop sharing | ✅ Done |
+| 4 | Background jobs (Redis, Celery), retries, idempotency | ⏭ Next |
 | 5 | AI evaluation, rate limiting, observability, LLM tracing | |
 | 6 | Docker, CI/CD, AWS deployment | |
 | — | React + TypeScript frontend, built alongside the backend | |

@@ -1,10 +1,12 @@
 import uuid
-from datetime import datetime
-from typing import Annotated
+from datetime import date, datetime
+from typing import Annotated, Self
 
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
 
-from app.models import UserRole
+from app.models import Summary, SummaryStatus, UserRole
+
+MAX_PERIOD_DAYS = 92
 
 # Deliberately loose: real validation of ownership happens by sending the invite.
 Email = Annotated[str, StringConstraints(pattern=r"^[^@\s]+@[^@\s]+$", max_length=320)]
@@ -87,29 +89,118 @@ class AssignmentRead(BaseModel):
     created_at: datetime
 
 
-class SummaryCreate(BaseModel):
-    title: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
-    body: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=20000)]
+class SummaryGenerate(BaseModel):
+    """Period (inclusive dates, UTC) whose entries the summary is based on."""
+
+    period_start: date
+    period_end: date
+
+    @model_validator(mode="after")
+    def _check_period(self) -> Self:
+        if self.period_end < self.period_start:
+            raise ValueError("period_end must not be before period_start")
+        if (self.period_end - self.period_start).days > MAX_PERIOD_DAYS:
+            raise ValueError(f"period must not exceed {MAX_PERIOD_DAYS} days")
+        return self
 
 
-class SummaryListItem(BaseModel):
-    """Metadata only: the body is returned (and audited) by the detail endpoint."""
-
-    model_config = ConfigDict(from_attributes=True)
-
+class StatementEdit(BaseModel):
     id: uuid.UUID
-    client_id: uuid.UUID
-    title: str
-    shared_at: datetime | None
-    created_at: datetime
+    text: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=600)]
+
+
+class SummaryUpdate(BaseModel):
+    """Client edits of a draft. Editing returns the summary to `draft` (re-approval needed)."""
+
+    title: (
+        Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
+        | None
+    ) = None
+    statements: Annotated[list[StatementEdit], Field(max_length=100)] = []
+
+
+class StatementRead(BaseModel):
+    id: uuid.UUID
+    section: str
+    text: str
+    source_entry_ids: list[uuid.UUID]
 
 
 class SummaryRead(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    """The client's view: includes status and the entries each statement is based on."""
 
     id: uuid.UUID
     client_id: uuid.UUID
     title: str
     body: str
+    status: SummaryStatus
+    period_start: date | None
+    period_end: date | None
+    statements: list[StatementRead]
+    approved_at: datetime | None
     shared_at: datetime | None
+    created_at: datetime
+
+    @classmethod
+    def from_model(cls, summary: Summary) -> Self:
+        return cls(
+            id=summary.id,
+            client_id=summary.client_id,
+            title=summary.title,
+            body=summary.body,
+            status=summary.status,
+            period_start=summary.period_start,
+            period_end=summary.period_end,
+            statements=[
+                StatementRead(
+                    id=st.id,
+                    section=st.section,
+                    text=st.text,
+                    source_entry_ids=sorted(c.entry_id for c in st.citations),
+                )
+                for st in summary.statements
+            ],
+            approved_at=summary.approved_at,
+            shared_at=summary.shared_at,
+            created_at=summary.created_at,
+        )
+
+
+class SummaryListItem(BaseModel):
+    """Clinician list: metadata only; the body is returned (and audited) by the detail endpoint."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    client_id: uuid.UUID
+    title: str
+    period_start: date | None
+    period_end: date | None
+    shared_at: datetime | None
+    created_at: datetime
+
+
+class SharedSummaryRead(SummaryListItem):
+    """Clinician detail. Deliberately no citations: the client's raw entries stay private."""
+
+    body: str
+
+
+class CrisisResponse(BaseModel):
+    crisis: bool = True
+    message: str
+    resources: list[dict[str, str]]
+
+
+class AfterSessionCreate(BaseModel):
+    text: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=5000)]
+
+
+class AfterSessionRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    discussed: list[str]
+    to_try: list[str]
+    questions: list[str]
     created_at: datetime

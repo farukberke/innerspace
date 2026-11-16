@@ -4,10 +4,16 @@ from typing import Annotated
 from fastapi import APIRouter, Body, HTTPException, status
 
 from app.api.deps import CurrentClient, CurrentClinician, SessionDep
-from app.schemas.care import ClientRead, SummaryCreate, SummaryListItem, SummaryRead
+from app.schemas.care import (
+    ClientRead,
+    SharedSummaryRead,
+    SummaryListItem,
+    SummaryRead,
+    SummaryUpdate,
+)
 from app.services import people
 from app.services import summaries as service
-from app.services.errors import NotFoundError
+from app.services.errors import ConflictError, NotFoundError, ValidationFailedError
 
 router = APIRouter(tags=["summaries"])
 
@@ -19,17 +25,9 @@ def _not_found() -> HTTPException:
 # --- Client: own summaries, and the sharing (approval) decision ------------------------
 
 
-@router.post("/summaries", status_code=status.HTTP_201_CREATED)
-async def create_summary(
-    session: SessionDep, client: CurrentClient, data: Annotated[SummaryCreate, Body()]
-) -> SummaryRead:
-    summary = await service.create_summary(session, client, data.title, data.body)
-    return SummaryRead.model_validate(summary)
-
-
 @router.get("/summaries")
 async def list_summaries(session: SessionDep, client: CurrentClient) -> list[SummaryRead]:
-    return [SummaryRead.model_validate(s) for s in await service.list_own(session, client)]
+    return [SummaryRead.from_model(s) for s in await service.list_own(session, client)]
 
 
 @router.get("/summaries/{summary_id}")
@@ -37,9 +35,41 @@ async def get_summary(
     session: SessionDep, client: CurrentClient, summary_id: uuid.UUID
 ) -> SummaryRead:
     try:
-        return SummaryRead.model_validate(await service.get_own(session, client, summary_id))
+        return SummaryRead.from_model(await service.get_own(session, client, summary_id))
     except NotFoundError:
         raise _not_found() from None
+
+
+@router.patch("/summaries/{summary_id}")
+async def update_summary(
+    session: SessionDep,
+    client: CurrentClient,
+    summary_id: uuid.UUID,
+    data: Annotated[SummaryUpdate, Body()],
+) -> SummaryRead:
+    edits = {e.id: e.text for e in data.statements}
+    try:
+        summary = await service.update_draft(session, client, summary_id, data.title, edits)
+    except NotFoundError:
+        raise _not_found() from None
+    except ConflictError as exc:
+        raise HTTPException(status.HTTP_409_CONFLICT, exc.message) from None
+    except ValidationFailedError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, exc.message) from None
+    return SummaryRead.from_model(summary)
+
+
+@router.post("/summaries/{summary_id}/approve")
+async def approve_summary(
+    session: SessionDep, client: CurrentClient, summary_id: uuid.UUID
+) -> SummaryRead:
+    try:
+        summary = await service.approve(session, client, summary_id)
+    except NotFoundError:
+        raise _not_found() from None
+    except ValidationFailedError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, exc.message) from None
+    return SummaryRead.from_model(summary)
 
 
 @router.post("/summaries/{summary_id}/share")
@@ -50,7 +80,9 @@ async def share_summary(
         summary = await service.set_shared(session, client, summary_id, True)
     except NotFoundError:
         raise _not_found() from None
-    return SummaryRead.model_validate(summary)
+    except ConflictError as exc:
+        raise HTTPException(status.HTTP_409_CONFLICT, exc.message) from None
+    return SummaryRead.from_model(summary)
 
 
 @router.post("/summaries/{summary_id}/unshare")
@@ -61,7 +93,9 @@ async def unshare_summary(
         summary = await service.set_shared(session, client, summary_id, False)
     except NotFoundError:
         raise _not_found() from None
-    return SummaryRead.model_validate(summary)
+    except ConflictError as exc:
+        raise HTTPException(status.HTTP_409_CONFLICT, exc.message) from None
+    return SummaryRead.from_model(summary)
 
 
 # --- Clinician: assigned clients and the summaries they have shared --------------------
@@ -84,9 +118,9 @@ async def list_shared_summaries(
 @router.get("/clinician/summaries/{summary_id}")
 async def get_shared_summary(
     session: SessionDep, clinician: CurrentClinician, summary_id: uuid.UUID
-) -> SummaryRead:
+) -> SharedSummaryRead:
     try:
         summary = await service.get_shared_with(session, clinician, summary_id)
     except NotFoundError:
         raise _not_found() from None
-    return SummaryRead.model_validate(summary)
+    return SharedSummaryRead.model_validate(summary)

@@ -115,3 +115,16 @@ async def delete_entry(session: AsyncSession, client: User, entry_id: uuid.UUID)
 def _error(loc: str | tuple[object, ...], msg: str) -> dict[str, object]:
     loc_tuple = (loc,) if isinstance(loc, str) else loc
     return {"loc": ["body", *loc_tuple], "msg": msg, "type": "value_error"}
+
+
+def entries_in_period(
+    client_id: uuid.UUID, organization_id: uuid.UUID, start: datetime, end: datetime
+) -> Select[tuple[Entry]]:
+    """Entries of one client within [start, end). Used by the AI tools and validators, which
+    receive the client from the authenticated request, never from the model."""
+    return select(Entry).where(
+        Entry.client_id == client_id,
+        Entry.organization_id == organization_id,
+        Entry.occurred_at >= start,
+        Entry.occurred_at < end,
+    )

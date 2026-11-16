@@ -1,18 +1,23 @@
 import uuid
-from datetime import datetime
+from datetime import date, datetime
+from decimal import Decimal
+from enum import StrEnum
 from typing import Any
 
 from sqlalchemy import (
+    Date,
     DateTime,
+    ForeignKey,
     ForeignKeyConstraint,
     Index,
+    Numeric,
     String,
     Text,
     UniqueConstraint,
     func,
 )
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin, str_enum
 from app.models.user import UserRole
@@ -71,11 +76,18 @@ class Invitation(UUIDPrimaryKeyMixin, Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
+class SummaryStatus(StrEnum):
+    DRAFT = "draft"  # AI output (or edited since); private, not yet approved
+    APPROVED = "approved"  # the client reviewed it; still private
+    SHARED = "shared"  # visible to the assigned clinician
+    REVOKED = "revoked"  # was shared, the client took it back
+
+
 class Summary(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """A client's summary for their clinician. Private until the client shares it.
 
-    Phase 3 fills `body` from AI drafts; sharing is the client's approval step and can be
-    revoked (`shared_at` back to NULL).
+    Lifecycle (human-in-the-loop): draft -> approved -> shared <-> revoked. Only the client
+    moves it; editing returns it to draft. `body` is rendered from the statements.
     """
 
     __tablename__ = "summaries"
@@ -92,7 +104,90 @@ class Summary(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     client_id: Mapped[uuid.UUID]
     title: Mapped[str] = mapped_column(String(200))
     body: Mapped[str] = mapped_column(Text)
+    status: Mapped[SummaryStatus] = mapped_column(
+        str_enum(SummaryStatus, "summary_status"), default=SummaryStatus.DRAFT
+    )
+    period_start: Mapped[date | None] = mapped_column(Date)
+    period_end: Mapped[date | None] = mapped_column(Date)
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     shared_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    statements: Mapped[list["SummaryStatement"]] = relationship(
+        order_by="SummaryStatement.position",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+
+
+class SummaryStatement(UUIDPrimaryKeyMixin, Base):
+    """One statement of a summary, with the entries it is based on."""
+
+    __tablename__ = "summary_statements"
+    __table_args__ = (Index("ix_summary_statements_summary_id", "summary_id"),)
+
+    summary_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("summaries.id", ondelete="CASCADE"))
+    position: Mapped[int]
+    section: Mapped[str] = mapped_column(String(80))
+    text: Mapped[str] = mapped_column(Text)
+
+    citations: Mapped[list["SummaryCitation"]] = relationship(
+        cascade="all, delete-orphan", lazy="selectin"
+    )
+
+
+class SummaryCitation(Base):
+    """Statement -> source entry. Deleting an entry removes the citation, not the statement."""
+
+    __tablename__ = "summary_citations"
+
+    statement_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("summary_statements.id", ondelete="CASCADE"), primary_key=True
+    )
+    entry_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("entries.id", ondelete="CASCADE"), primary_key=True, index=True
+    )
+
+
+class AfterSessionNote(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """The client's post-session free text, structured by AI. Visible only to the client."""
+
+    __tablename__ = "after_session_notes"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["client_id", "organization_id"],
+            ["users.id", "users.organization_id"],
+            ondelete="CASCADE",
+        ),
+        Index("ix_after_session_notes_client_id_created_at", "client_id", "created_at"),
+    )
+
+    organization_id: Mapped[uuid.UUID]
+    client_id: Mapped[uuid.UUID]
+    source_text: Mapped[str] = mapped_column(Text)
+    discussed: Mapped[list[str]] = mapped_column(JSONB, default=list)
+    to_try: Mapped[list[str]] = mapped_column(JSONB, default=list)
+    questions: Mapped[list[str]] = mapped_column(JSONB, default=list)
+
+
+class LlmUsage(UUIDPrimaryKeyMixin, Base):
+    """Token/cost/latency record per LLM call. Never holds prompts or any user content."""
+
+    __tablename__ = "llm_usage"
+    __table_args__ = (
+        Index("ix_llm_usage_organization_id_created_at", "organization_id", "created_at"),
+    )
+
+    organization_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("organizations.id"))
+    user_id: Mapped[uuid.UUID | None]
+    purpose: Mapped[str] = mapped_column(String(32))
+    model: Mapped[str] = mapped_column(String(100))
+    input_tokens: Mapped[int]
+    output_tokens: Mapped[int]
+    requests: Mapped[int]
+    cost_usd: Mapped[Decimal] = mapped_column(Numeric(12, 6))
+    duration_ms: Mapped[int]
+    success: Mapped[bool]
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 class AuditLog(UUIDPrimaryKeyMixin, Base):
