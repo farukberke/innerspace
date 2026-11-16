@@ -8,7 +8,7 @@
 
 ## Status
 
-🚧 **Active development.** Phase 1 (backend foundation) is complete; Phase 2 (authentication & authorization) is next.
+🚧 **Active development.** Phases 1 (backend foundation) and 2 (authentication & authorization) are complete; Phase 3 (AI summaries) is next.
 
 ## Roadmap
 
@@ -16,8 +16,8 @@
 |---|---|---|
 | 0 | Repository, tooling, secret scanning | ✅ Done |
 | 1 | FastAPI app, PostgreSQL, SQLAlchemy models, Alembic, entry CRUD, structured logging | ✅ Done |
-| 2 | JWT auth, roles, RBAC, organization-level isolation, authorization tests | ⏭ Next |
-| 3 | AI summaries: structured output, citations, guardrails, human-in-the-loop sharing | |
+| 2 | JWT auth, roles, RBAC, organization-level isolation, authorization tests | ✅ Done |
+| 3 | AI summaries: structured output, citations, guardrails, human-in-the-loop sharing | ⏭ Next |
 | 4 | Background jobs (Redis, Celery), retries, idempotency | |
 | 5 | AI evaluation, rate limiting, observability, LLM tracing | |
 | 6 | Docker, CI/CD, AWS deployment | |
@@ -70,7 +70,7 @@ uv run pytest                 # runs against the `<db>_test` database
 
 API docs: http://localhost:8000/docs (disabled in production). Health: `/health` (liveness), `/health/ready` (database).
 
-> Phase 1 has no authentication yet: requests act as the seeded user in `DEV_USER_EMAIL`. This is disabled in production and replaced by JWT authentication in Phase 2.
+> Authentication: `POST /api/v1/auth/login` returns short-lived access + refresh JWTs (`Authorization: Bearer ...`). There is no open sign-up: accounts are created from invitations (`POST /api/v1/invitations`, token returned in the response until e-mail delivery exists). `JWT_SECRET` is required (see `.env.example`). `python -m app.seed` prints a random password for the demo users unless `SEED_PASSWORD` is set.
 
 ### Backend layout
 

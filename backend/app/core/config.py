@@ -2,7 +2,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -21,9 +21,12 @@ class Settings(BaseSettings):
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
     database_url: str = Field(min_length=1)
 
-    # TEMPORARY (Phase 1): no authentication yet. Requests act as this seeded user.
-    # Removed in Phase 2 when JWT authentication is introduced.
-    dev_user_email: str | None = None
+    # Auth. The signing algorithm is fixed in code (HS256), never read from tokens or env.
+    jwt_secret: SecretStr = Field(min_length=32)
+    access_token_minutes: int = Field(default=15, ge=1)
+    refresh_token_days: int = Field(default=7, ge=1)
+    invitation_hours: int = Field(default=72, ge=1)
+    seed_password: SecretStr | None = None  # demo seed only
 
     @property
     def is_production(self) -> bool:

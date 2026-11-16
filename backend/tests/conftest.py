@@ -15,10 +15,14 @@ from sqlalchemy import make_url
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
 
 from alembic import command
-from app.api.deps import get_current_user, get_session
+from app.api.deps import get_session
 from app.core.config import Settings, get_settings
+from app.core.security import TokenType, create_token, hash_password
 from app.main import create_app
 from app.models import Organization, User, UserRole
+
+TEST_JWT_SECRET = "test-secret-test-secret-test-secret-0123456789"  # noqa: S105
+TEST_PASSWORD = "correct-horse-battery"  # noqa: S105
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 
@@ -30,7 +34,7 @@ def _test_database_url() -> str:
 
 @pytest.fixture(scope="session")
 def test_settings() -> Settings:
-    return Settings(app_env="test", database_url=_test_database_url(), dev_user_email=None)
+    return Settings(app_env="test", database_url=_test_database_url(), jwt_secret=TEST_JWT_SECRET)
 
 
 @pytest.fixture(scope="session")
@@ -86,13 +90,19 @@ def make_org(db_session: AsyncSession) -> Callable[[str], object]:
 
 
 @pytest.fixture
-def make_user(db_session: AsyncSession) -> Callable[..., object]:
+async def password_hash() -> str:
+    return await hash_password(TEST_PASSWORD)
+
+
+@pytest.fixture
+def make_user(db_session: AsyncSession, password_hash: str) -> Callable[..., object]:
     async def _make(org: Organization, role: UserRole, name: str) -> User:
         user = User(
             organization_id=org.id,
             email=f"{name}@{org.slug}.test",
             display_name=name,
             role=role,
+            password_hash=password_hash,
         )
         db_session.add(user)
         await db_session.flush()
@@ -120,15 +130,31 @@ async def client_a(make_user, org_a) -> User:
 
 
 class ActingUser:
-    """Which user the request is made as. Stands in for authentication until Phase 2."""
+    """Which user requests are made as: setting `user` sends that user's real access token."""
 
-    def __init__(self) -> None:
-        self.user: User | None = None
+    def __init__(self, settings: Settings) -> None:
+        self._settings = settings
+        self._client: AsyncClient | None = None
+        self._user: User | None = None
+
+    @property
+    def user(self) -> User | None:
+        return self._user
+
+    @user.setter
+    def user(self, user: User | None) -> None:
+        assert self._client is not None
+        self._user = user
+        if user is None:
+            self._client.headers.pop("Authorization", None)
+        else:
+            token = create_token(self._settings, user.id, TokenType.ACCESS)
+            self._client.headers["Authorization"] = f"Bearer {token}"
 
 
 @pytest.fixture
-def acting() -> ActingUser:
-    return ActingUser()
+def acting(test_settings: Settings) -> ActingUser:
+    return ActingUser(test_settings)
 
 
 @pytest.fixture
@@ -140,11 +166,7 @@ async def http(
     async def _session() -> AsyncIterator[AsyncSession]:
         yield db_session
 
-    async def _current_user() -> User:
-        assert acting.user is not None, "set `acting.user` before calling the API"
-        return acting.user
-
     app.dependency_overrides[get_session] = _session
-    app.dependency_overrides[get_current_user] = _current_user
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        acting._client = client
         yield client

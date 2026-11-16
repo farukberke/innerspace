@@ -6,6 +6,7 @@ Idempotent: organizations that already exist (by slug) are skipped.
 
 import asyncio
 import random
+import secrets
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -15,9 +16,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.core.db import create_engine, create_sessionmaker
+from app.core.security import hash_password
 from app.models import (
     Appointment,
     AppointmentKind,
+    CareAssignment,
     Entry,
     EntryKind,
     Organization,
@@ -129,8 +132,9 @@ def _client_entries(rng: random.Random, client: User, now: datetime) -> list[Ent
     return entries
 
 
-async def seed(session: AsyncSession, *, now: datetime | None = None) -> list[str]:
-    """Creates missing demo organizations. Returns the slugs that were created."""
+async def seed(session: AsyncSession, *, password: str, now: datetime | None = None) -> list[str]:
+    """Creates missing demo organizations (all users share `password`). Returns created slugs."""
+    password_hash = await hash_password(password)
     now = (now or datetime.now(UTC)).replace(second=0, microsecond=0)
     rng = random.Random(42)  # noqa: S311 — deterministic demo data, not security-relevant
     created: list[str] = []
@@ -144,7 +148,13 @@ async def seed(session: AsyncSession, *, now: datetime | None = None) -> list[st
         await session.flush()
 
         users = [
-            User(organization_id=org.id, email=u.email, display_name=u.display_name, role=u.role)
+            User(
+                organization_id=org.id,
+                email=u.email,
+                display_name=u.display_name,
+                role=u.role,
+                password_hash=password_hash,
+            )
             for u in spec.users
         ]
         session.add_all(users)
@@ -152,6 +162,12 @@ async def seed(session: AsyncSession, *, now: datetime | None = None) -> list[st
 
         clinicians = [u for u in users if u.role == UserRole.CLINICIAN]
         for client in (u for u in users if u.role == UserRole.CLIENT):
+            assigned = rng.choice(clinicians)
+            session.add(
+                CareAssignment(
+                    organization_id=org.id, clinician_id=assigned.id, client_id=client.id
+                )
+            )
             session.add_all(_client_entries(rng, client, now))
             next_session = (now + timedelta(days=rng.randint(1, 6))).replace(hour=14, minute=0)
             session.add_all(
@@ -159,14 +175,14 @@ async def seed(session: AsyncSession, *, now: datetime | None = None) -> list[st
                     Appointment(
                         organization_id=org.id,
                         client_id=client.id,
-                        clinician_id=rng.choice(clinicians).id,
+                        clinician_id=assigned.id,
                         kind=AppointmentKind.THERAPY,
                         scheduled_at=next_session - timedelta(days=7),
                     ),
                     Appointment(
                         organization_id=org.id,
                         client_id=client.id,
-                        clinician_id=rng.choice(clinicians).id,
+                        clinician_id=assigned.id,
                         kind=AppointmentKind.THERAPY,
                         scheduled_at=next_session,
                     ),
@@ -182,13 +198,20 @@ async def main() -> None:
     settings = get_settings()
     if settings.is_production:
         raise SystemExit("Refusing to seed demo data in production.")
+    password = (
+        settings.seed_password.get_secret_value()
+        if settings.seed_password
+        else secrets.token_urlsafe(12)
+    )
     engine = create_engine(settings.database_url)
     try:
         async with create_sessionmaker(engine)() as session:
-            created = await seed(session)
+            created = await seed(session, password=password)
     finally:
         await engine.dispose()
     print(f"Seeded organizations: {created or 'none (already present)'}")  # noqa: T201
+    if created and not settings.seed_password:
+        print(f"Password for all seeded users (shown once): {password}")  # noqa: T201
 
 
 if __name__ == "__main__":

@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app.api import entries, health
+from app.api import admin, auth, entries, health, invitations, summaries
 from app.core.config import Settings, get_settings
 from app.core.db import create_engine, create_sessionmaker
 from app.core.logging import configure_logging
@@ -34,7 +34,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         redoc_url=None,
         openapi_url="/openapi.json" if docs_enabled else None,
     )
+    app.state.settings = settings
     app.add_middleware(RequestContextMiddleware)
     app.include_router(health.router)
+    app.include_router(auth.router, prefix=API_PREFIX)
+    app.include_router(invitations.router, prefix=API_PREFIX)
+    app.include_router(admin.router, prefix=API_PREFIX)
     app.include_router(entries.router, prefix=API_PREFIX)
+    app.include_router(summaries.router, prefix=API_PREFIX)
     return app

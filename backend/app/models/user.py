@@ -1,7 +1,7 @@
 import uuid
 from enum import StrEnum
 
-from sqlalchemy import ForeignKey, String, UniqueConstraint
+from sqlalchemy import Boolean, ForeignKey, String, UniqueConstraint, true
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin, str_enum
@@ -14,7 +14,7 @@ class UserRole(StrEnum):
 
 
 class User(UUIDPrimaryKeyMixin, TimestampMixin, Base):
-    """A member of exactly one organization. Credentials are added in Phase 2."""
+    """A member of exactly one organization. `password_hash` is an argon2 hash."""
 
     __tablename__ = "users"
     __table_args__ = (
@@ -29,3 +29,7 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     email: Mapped[str] = mapped_column(String(320), unique=True)
     display_name: Mapped[str] = mapped_column(String(120))
     role: Mapped[UserRole] = mapped_column(str_enum(UserRole, "user_role"))
+    # Nullable only so the column could be added to existing rows without data loss;
+    # a user without a hash cannot log in.
+    password_hash: Mapped[str | None] = mapped_column(String(255))
+    is_active: Mapped[bool] = mapped_column(Boolean, server_default=true())
