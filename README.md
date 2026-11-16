@@ -8,7 +8,20 @@
 
 ## Status
 
-🚧 **Active development — Phase 0: Project setup.** See the [roadmap](docs/yol-haritasi.md) and [progress log](docs/ilerleme.md) (in Turkish).
+🚧 **Active development.** Phase 0 (project setup) is complete; Phase 1 (backend foundation) is next.
+
+## Roadmap
+
+| Phase | Scope | Status |
+|---|---|---|
+| 0 | Repository, tooling, secret scanning | ✅ Done |
+| 1 | FastAPI app, PostgreSQL, SQLAlchemy models, Alembic, basic CRUD | ⏭ Next |
+| 2 | JWT auth, roles, RBAC, organization-level isolation, authorization tests | |
+| 3 | AI summaries: structured output, citations, guardrails, human-in-the-loop sharing | |
+| 4 | Background jobs (Redis, Celery), retries, idempotency | |
+| 5 | AI evaluation, rate limiting, observability, LLM tracing | |
+| 6 | Docker, CI/CD, AWS deployment | |
+| — | React + TypeScript frontend, built alongside the backend | |
 
 ## What it does (planned v1)
 

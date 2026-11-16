@@ -32,3 +32,7 @@ Thumbs.db
 
 # --- Claude Code local settings (machine-specific) ---
 .claude/settings.local.json
+
+# --- Private project notes (kept locally, not published) ---
+CLAUDE.md
+docs/
