@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.ai.llm import AiUnavailableError, build_model
 from app.core.config import Settings
 from app.core.db import session_scope
+from app.core.ratelimit import RateLimiter, parse_limit
 from app.core.security import TokenError, TokenType, decode_token
 from app.models import User, UserRole
 
@@ -100,3 +101,38 @@ def get_job_enqueuer() -> JobEnqueuer:
 
 
 JobEnqueuerDep = Annotated[JobEnqueuer, Depends(get_job_enqueuer)]
+
+
+def get_rate_limiter(request: Request) -> RateLimiter:
+    return request.app.state.rate_limiter
+
+
+RateLimiterDep = Annotated[RateLimiter, Depends(get_rate_limiter)]
+
+
+def client_ip(request: Request) -> str:
+    """The peer address. Behind a proxy run uvicorn with --proxy-headers/--forwarded-allow-ips
+    so this is the real client, never a spoofable header read by the app itself."""
+    return request.client.host if request.client else "unknown"
+
+
+def limit_per_ip(name: str) -> Callable[..., Awaitable[None]]:
+    """Dependency factory: `rate_limit_<name>` per client IP."""
+
+    async def _dependency(request: Request, limiter: RateLimiterDep, settings: SettingsDep) -> None:
+        limit = parse_limit(getattr(settings, f"rate_limit_{name}"))
+        await limiter.check(name, client_ip(request), limit)
+
+    return _dependency
+
+
+def limit_per_user(name: str) -> Callable[..., Awaitable[None]]:
+    """Dependency factory: `rate_limit_<name>` per authenticated user."""
+
+    async def _dependency(
+        user: CurrentUser, limiter: RateLimiterDep, settings: SettingsDep
+    ) -> None:
+        limit = parse_limit(getattr(settings, f"rate_limit_{name}"))
+        await limiter.check(name, str(user.id), limit)
+
+    return _dependency

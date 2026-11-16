@@ -21,6 +21,7 @@ from pydantic_ai.usage import RunUsage, UsageLimits
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings
+from app.core.metrics import METRICS
 from app.models import LlmUsage, User
 
 
@@ -102,6 +103,8 @@ async def run_agent[DepsT, OutT](
     except Exception as exc:
         raise AiGenerationError(type(exc).__name__, transient=is_transient(exc)) from None
     finally:
+        cost = _cost(settings, usage)
+        METRICS.observe_llm(purpose, success, usage.input_tokens, usage.output_tokens, float(cost))
         session.add(
             LlmUsage(
                 id=uuid.uuid4(),
@@ -112,7 +115,7 @@ async def run_agent[DepsT, OutT](
                 input_tokens=usage.input_tokens,
                 output_tokens=usage.output_tokens,
                 requests=usage.requests,
-                cost_usd=_cost(settings, usage),
+                cost_usd=cost,
                 duration_ms=int((time.perf_counter() - started) * 1000),
                 success=success,
             )

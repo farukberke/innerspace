@@ -2,11 +2,18 @@ import logging
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Body, Header, HTTPException, Response, status
+from fastapi import APIRouter, Body, Depends, Header, HTTPException, Response, status
 
 from app.ai.crisis import CRISIS_MESSAGE, CRISIS_RESOURCES
 from app.ai.llm import AiGenerationError
-from app.api.deps import CurrentClient, JobEnqueuerDep, LlmModelDep, SessionDep, SettingsDep
+from app.api.deps import (
+    CurrentClient,
+    JobEnqueuerDep,
+    LlmModelDep,
+    SessionDep,
+    SettingsDep,
+    limit_per_user,
+)
 from app.models import SummaryJobStatus
 from app.schemas.care import (
     AfterSessionCreate,
@@ -16,7 +23,7 @@ from app.schemas.care import (
     SummaryJobRead,
 )
 from app.services import ai as service
-from app.services import jobs
+from app.services import jobs, usage
 from app.services.errors import ConflictError, CrisisDetectedError, NotFoundError
 
 router = APIRouter(tags=["ai"])
@@ -33,9 +40,14 @@ def _generation_failed(exc: AiGenerationError) -> HTTPException:
     )
 
 
-@router.post("/summaries/generate", status_code=status.HTTP_202_ACCEPTED)
+@router.post(
+    "/summaries/generate",
+    status_code=status.HTTP_202_ACCEPTED,
+    dependencies=[Depends(limit_per_user("generate"))],
+)
 async def generate_summary(
     session: SessionDep,
+    settings: SettingsDep,
     client: CurrentClient,
     _model: LlmModelDep,  # 503 before any job exists when AI is not configured
     enqueue: JobEnqueuerDep,
@@ -47,6 +59,7 @@ async def generate_summary(
     """Queues generation of a private AI *draft* from the client's own entries in the period and
     returns the job at once. Repeating the request (same `Idempotency-Key`, or without a key
     while a job for the same period is active) returns the existing job."""
+    await usage.check_daily_budget(session, settings, client)  # 429 before any job exists
     try:
         job, created = await jobs.create_or_get(
             session, client, data.period_start, data.period_end, idempotency_key
@@ -79,7 +92,11 @@ async def get_summary_job(
     return read
 
 
-@router.post("/after-session-notes", status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/after-session-notes",
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(limit_per_user("after_session"))],
+)
 async def create_after_session_note(
     response: Response,
     session: SessionDep,
@@ -88,6 +105,7 @@ async def create_after_session_note(
     model: LlmModelDep,
     data: Annotated[AfterSessionCreate, Body()],
 ) -> AfterSessionRead | CrisisResponse:
+    await usage.check_daily_budget(session, settings, client)
     try:
         note = await service.create_after_session_note(session, settings, model, client, data.text)
     except CrisisDetectedError:

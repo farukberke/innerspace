@@ -23,9 +23,10 @@ _RULES: dict[str, list[str]] = {
     ],
     "medication_or_dose_advice": [
         r"\b\d+([.,]\d+)? ?(mg|mcg|ml|gr|miligram|mikrogram)\b",
-        r"\b(doz|dozu|dozunu|dozaj)\b",
+        r"\b(doz|dozu|dozunu)\b|\bdozaj",
         r"\bdosage\b|\bdoses?\b",
-        r"\bilac(i|lari|inizi|ini)? .{0,30}\b(artir|azalt|birak|kes|degistir|kullan|al|basla)",
+        r"\bilac(i|lari|inizi|ini)? .{0,30}"
+        r"\b(artir|azalt|birak|kes|degistir|basla|(kullan|al)(in|iniz|malisin|malisiniz)?\b)",
         r"\b(artir|azalt|birak|kes|degistir)(in|iniz|malisin|malisiniz|abilirsin)?\b.{0,30}\bilac",
         r"\b(increase|decrease|reduce|raise|lower|stop|start|switch|change|adjust|skip)\b"
         r".{0,30}\b(medication|medicine|dose|dosage|pills?|prescription|antidepressant)",

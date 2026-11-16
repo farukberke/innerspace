@@ -1,8 +1,16 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Body, HTTPException, status
+from fastapi import APIRouter, Body, Depends, HTTPException, Request, status
 
-from app.api.deps import CurrentUser, SessionDep, SettingsDep
+from app.api.deps import (
+    CurrentUser,
+    RateLimiterDep,
+    SessionDep,
+    SettingsDep,
+    client_ip,
+    limit_per_ip,
+)
+from app.core.ratelimit import parse_limit
 from app.schemas.care import (
     InvitationAccept,
     LoginRequest,
@@ -23,15 +31,22 @@ def _tokens(pair: tuple[str, str]) -> TokenPair:
 
 @router.post("/login")
 async def login(
-    session: SessionDep, settings: SettingsDep, data: Annotated[LoginRequest, Body()]
+    request: Request,
+    session: SessionDep,
+    settings: SettingsDep,
+    limiter: RateLimiterDep,
+    data: Annotated[LoginRequest, Body()],
 ) -> TokenPair:
+    # Brute force is limited per source IP and, separately, per target account.
+    await limiter.check("login_ip", client_ip(request), parse_limit(settings.rate_limit_login_ip))
+    await limiter.check("login_email", data.email, parse_limit(settings.rate_limit_login_email))
     try:
         return _tokens(await service.authenticate(session, settings, data.email, data.password))
     except InvalidCredentialsError:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid email or password") from None
 
 
-@router.post("/refresh")
+@router.post("/refresh", dependencies=[Depends(limit_per_ip("refresh"))])
 async def refresh(
     session: SessionDep, settings: SettingsDep, data: Annotated[RefreshRequest, Body()]
 ) -> TokenPair:
@@ -46,7 +61,11 @@ async def me(user: CurrentUser) -> UserRead:
     return UserRead.model_validate(user)
 
 
-@router.post("/accept-invitation", status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/accept-invitation",
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(limit_per_ip("accept_invitation"))],
+)
 async def accept_invitation(
     session: SessionDep, data: Annotated[InvitationAccept, Body()]
 ) -> UserRead:

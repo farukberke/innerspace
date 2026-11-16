@@ -43,6 +43,50 @@ class Settings(BaseSettings):
     job_max_retries: int = Field(default=3, ge=0, le=10)  # transient failures only
     job_retry_backoff_seconds: int = Field(default=10, ge=1)  # doubles every retry
 
+    # Rate limiting ("<count>/<window>", window: second|minute|hour|day). Redis-backed
+    # (`rate_limit_redis_url`, default = the Celery broker); "memory" is for tests/dev only.
+    rate_limit_backend: Literal["redis", "memory"] = "redis"
+    rate_limit_redis_url: str | None = None
+    rate_limit_login_ip: str = "30/minute"
+    rate_limit_login_email: str = "8/15minute"  # brute force on one account, from any IP
+    rate_limit_refresh: str = "30/minute"
+    rate_limit_accept_invitation: str = "10/minute"
+    rate_limit_generate: str = "10/hour"  # per user: POST /summaries/generate
+    rate_limit_after_session: str = "30/hour"  # per user: POST /after-session-notes
+    # Rolling 24h budget per user across all LLM calls (`llm_usage`); 0 disables a cap.
+    llm_daily_request_limit: int = Field(default=200, ge=0)
+    llm_daily_cost_limit_usd: float = Field(default=2.0, ge=0)
+
+    # Observability. Tracing is off without a token; content is never sent either way.
+    logfire_token: SecretStr | None = None
+    # /metrics (Prometheus) is served only with this bearer token; without it the route is 404.
+    metrics_token: SecretStr | None = None
+
+    # Stale `running` job reaper (the worker died mid-job). Keep well above the LLM timeout.
+    job_stale_after_seconds: int = Field(default=900, ge=60)
+    job_reaper_interval_seconds: int = Field(default=60, ge=5)
+
+    # Database pool.
+    db_pool_size: int = Field(default=5, ge=1)
+    db_max_overflow: int = Field(default=10, ge=0)
+    db_pool_timeout_seconds: float = Field(default=30, gt=0)
+    db_pool_recycle_seconds: int = Field(default=1800, ge=-1)
+
+    @field_validator(
+        "rate_limit_login_ip",
+        "rate_limit_login_email",
+        "rate_limit_refresh",
+        "rate_limit_accept_invitation",
+        "rate_limit_generate",
+        "rate_limit_after_session",
+    )
+    @classmethod
+    def _valid_rate_limit(cls, value: str) -> str:
+        from app.core.ratelimit import parse_limit  # noqa: PLC0415  (avoids an import cycle)
+
+        parse_limit(value)
+        return value
+
     @field_validator("jwt_secret")
     @classmethod
     def _reject_placeholder_secret(cls, value: SecretStr) -> SecretStr:

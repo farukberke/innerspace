@@ -6,7 +6,7 @@ from the database scoped to the job's client and organization."""
 import enum
 import logging
 import uuid
-from datetime import date
+from datetime import UTC, date, datetime, timedelta
 
 from pydantic_ai.models import Model
 from sqlalchemy import select, update
@@ -186,3 +186,37 @@ async def run(
         logger.error("summary job crashed", extra={"error_type": type(exc).__name__})
         await settle(SummaryJobStatus.FAILED, "internal_error")
     return JobOutcome.DONE
+
+
+async def reap_stale(
+    session: AsyncSession, stale_after_seconds: int, max_attempts: int
+) -> list[uuid.UUID]:
+    """Recovers jobs stuck in `running` (the worker died): back to `queued` while attempts
+    remain, otherwise `failed`. Returns the ids to enqueue again. Idempotent and safe to run
+    concurrently: both steps are conditional UPDATEs on the stale `running` state."""
+    cutoff = datetime.now(UTC) - timedelta(seconds=stale_after_seconds)
+    stale = (SummaryJob.status == _RUNNING, SummaryJob.updated_at < cutoff)
+    requeued = (
+        await session.scalars(
+            update(SummaryJob)
+            .where(*stale, SummaryJob.attempts < max_attempts)
+            .values(status=SummaryJobStatus.QUEUED)
+            .returning(SummaryJob.id)
+            .execution_options(synchronize_session=False)
+        )
+    ).all()
+    failed = (
+        await session.scalars(
+            update(SummaryJob)
+            .where(*stale, SummaryJob.attempts >= max_attempts)
+            .values(status=SummaryJobStatus.FAILED, error_code="stale_timeout")
+            .returning(SummaryJob.id)
+            .execution_options(synchronize_session=False)
+        )
+    ).all()
+    await session.commit()
+    if requeued or failed:
+        logger.warning(
+            "stale jobs reaped", extra={"requeued": len(requeued), "failed": len(failed)}
+        )
+    return list(requeued)

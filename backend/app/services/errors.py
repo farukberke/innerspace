@@ -31,3 +31,11 @@ class ValidationFailedError(Exception):
 class CrisisDetectedError(Exception):
     """Crisis language found in user text: no AI content is produced, the fixed crisis response
     is shown instead."""
+
+
+class RateLimitedError(Exception):
+    """A rate limit or usage budget is exhausted; retry after `retry_after` seconds."""
+
+    def __init__(self, retry_after: int) -> None:
+        super().__init__("rate limited")
+        self.retry_after = max(1, retry_after)

@@ -152,6 +152,12 @@ class SummaryJob(UUIDPrimaryKeyMixin, TimestampMixin, Base):
             unique=True,
             postgresql_where=text("idempotency_key IS NULL AND status IN ('queued', 'running')"),
         ),
+        # Stale-job reaper scans only the (few) running jobs.
+        Index(
+            "ix_summary_jobs_running_updated_at",
+            "updated_at",
+            postgresql_where=text("status = 'running'"),
+        ),
     )
 
     organization_id: Mapped[uuid.UUID]
@@ -225,6 +231,8 @@ class LlmUsage(UUIDPrimaryKeyMixin, Base):
     __tablename__ = "llm_usage"
     __table_args__ = (
         Index("ix_llm_usage_organization_id_created_at", "organization_id", "created_at"),
+        # Per-user rolling-24h budget check on every AI request.
+        Index("ix_llm_usage_user_id_created_at", "user_id", "created_at"),
     )
 
     organization_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("organizations.id"))

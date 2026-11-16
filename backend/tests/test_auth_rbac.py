@@ -604,8 +604,8 @@ def test_env_example_secret_is_rejected() -> None:
         Settings(database_url="postgresql+asyncpg://x/y", jwt_secret=placeholder)
 
 
-def test_engine_hides_statement_parameters() -> None:
-    engine = create_engine("postgresql+asyncpg://u:p@localhost/db")
+def test_engine_hides_statement_parameters(test_settings: Settings) -> None:
+    engine = create_engine(test_settings)
     assert engine.sync_engine.hide_parameters is True
 
 

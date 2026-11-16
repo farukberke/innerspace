@@ -45,6 +45,8 @@ def test_settings() -> Settings:
         database_url=_test_database_url(),
         jwt_secret=TEST_JWT_SECRET,
         anthropic_api_key=None,  # tests must never be able to reach a real provider
+        rate_limit_backend="memory",  # no Redis in tests
+        logfire_token=None,
     )
 
 

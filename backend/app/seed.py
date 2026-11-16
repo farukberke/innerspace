@@ -203,7 +203,7 @@ async def main() -> None:
         if settings.seed_password
         else secrets.token_urlsafe(12)
     )
-    engine = create_engine(settings.database_url)
+    engine = create_engine(settings)
     try:
         async with create_sessionmaker(engine)() as session:
             created = await seed(session, password=password)
