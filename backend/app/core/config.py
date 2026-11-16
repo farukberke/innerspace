@@ -66,6 +66,10 @@ class Settings(BaseSettings):
     job_stale_after_seconds: int = Field(default=900, ge=60)
     job_reaper_interval_seconds: int = Field(default=60, ge=5)
 
+    # CORS for a separately served frontend: comma-separated origins. Empty = CORS off.
+    # A wildcard is rejected.
+    cors_origins: str = ""
+
     # Database pool.
     db_pool_size: int = Field(default=5, ge=1)
     db_max_overflow: int = Field(default=10, ge=0)
@@ -94,6 +98,17 @@ class Settings(BaseSettings):
         if any(marker in lowered for marker in _PLACEHOLDER_MARKERS):
             raise ValueError("JWT_SECRET is a placeholder; generate a random value")
         return value
+
+    @field_validator("cors_origins")
+    @classmethod
+    def _no_wildcard_origin(cls, value: str) -> str:
+        if "*" in value:
+            raise ValueError("CORS_ORIGINS must list explicit origins, not a wildcard")
+        return value
+
+    @property
+    def cors_origin_list(self) -> list[str]:
+        return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
 
     @property
     def is_production(self) -> bool:

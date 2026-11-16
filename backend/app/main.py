@@ -2,6 +2,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.api import admin, ai, auth, entries, health, invitations, metrics, summaries
@@ -52,6 +53,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
 
     app.add_middleware(RequestContextMiddleware)
+    if settings.cors_origin_list:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=settings.cors_origin_list,
+            allow_methods=["GET", "POST", "PATCH", "DELETE"],
+            allow_headers=["Authorization", "Content-Type", "Idempotency-Key", "X-Request-ID"],
+            expose_headers=["Retry-After", "X-Request-ID"],
+        )
     app.include_router(health.router)
     app.include_router(metrics.router)
     app.include_router(auth.router, prefix=API_PREFIX)

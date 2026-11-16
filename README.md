@@ -8,7 +8,7 @@
 
 ## Status
 
-🚧 **Active development.** Phases 1 (backend foundation), 2 (authentication & authorization), 3 (AI summaries), 4 (background jobs) and 5 (evaluation, rate limiting, observability) are complete; Phase 6 is next.
+🚧 **Active development.** Phases 1 (backend foundation), 2 (authentication & authorization), 3 (AI summaries), 4 (background jobs), 5 (evaluation, rate limiting, observability) and the React frontend are complete; Phase 6 is next.
 
 ## Roadmap
 
@@ -21,7 +21,7 @@
 | 4 | Background jobs (Redis, Celery), retries, idempotency | ✅ Done |
 | 5 | AI evaluation, rate limiting, observability, LLM tracing | ✅ Done |
 | 6 | Docker, CI/CD, AWS deployment | ⏭ Next |
-| — | React + TypeScript frontend, built alongside the backend | |
+| — | React + TypeScript frontend, built alongside the backend | ✅ Done (client, clinician and clinic-admin screens) |
 
 ## What it does (planned v1)
 
@@ -96,3 +96,20 @@ backend/tests/     API, isolation, migration and seed tests (real PostgreSQL)
 ## License
 
 Copyright © 2026. All rights reserved. The source is public for review; no license is granted for reuse.
+
+## Frontend
+
+`frontend/`: React + TypeScript + Vite + Tailwind CSS (Turkish UI).
+
+```bash
+cd frontend
+cp .env.example .env     # VITE_API_URL, default http://localhost:8000
+npm ci && npm run dev    # http://localhost:5173
+npm run lint && npm test -- --run && npm run build
+```
+
+Backend side: set `CORS_ORIGINS=http://localhost:5173` in the repo-root `.env` (empty by default; wildcards are rejected).
+
+- **Tokens:** the access token is kept in memory only. The backend does not issue cookies, so the refresh token is stored in `sessionStorage` (cleared when the tab closes) and is used to restore the session after a reload. On a 401 the client refreshes once and retries; if that fails the user is logged out. Tokens are never put in URLs.
+- **Not built (no backend endpoint yet):** appointments and "My plan".
+- Invitations: e-mail delivery does not exist, so the one-time invitation code is shown to the inviter, who passes it on; the invitee pastes it on the "Accept invitation" page.

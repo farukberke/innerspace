@@ -36,3 +36,4 @@ Thumbs.db
 # --- Private project notes (kept locally, not published) ---
 CLAUDE.md
 docs/
+*.tsbuildinfo
