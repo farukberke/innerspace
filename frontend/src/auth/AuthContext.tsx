@@ -46,7 +46,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const logout = useCallback(() => {
+    const refresh = tokens.refresh
     tokens.clear()
+    void authApi.logout(refresh)
     setState({ status: 'anon' })
   }, [])
 

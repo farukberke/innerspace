@@ -38,6 +38,9 @@ def _shared_with(clinician: User) -> Select[tuple[Summary]]:
             Summary.organization_id == clinician.organization_id,
             CareAssignment.clinician_id == clinician.id,
             Summary.status == SummaryStatus.SHARED,
+            # A clinician assigned after the sharing sees nothing until the client
+            # shares again (otherwise assigning a new clinician would expose old data).
+            Summary.shared_at >= CareAssignment.created_at,
         )
     )
 
@@ -132,8 +135,8 @@ async def set_shared(
     if shared:
         if summary.status == SummaryStatus.DRAFT:
             raise ConflictError("Approve the summary before sharing it")
-        if summary.status == SummaryStatus.SHARED:
-            return summary
+        # Sharing again (even when already shared) renews `shared_at`: that is how the
+        # client lets clinicians assigned since the last share see the summary.
         summary.status = SummaryStatus.SHARED
         summary.shared_at = datetime.now(UTC)
     else:

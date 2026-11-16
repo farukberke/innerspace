@@ -1,7 +1,8 @@
 """Fixed-window rate limiting. Redis in production, in-memory for tests/dev.
 
 Keys never contain raw e-mail addresses (hashed). If Redis is unreachable the limiter fails
-open (logged): an outage of the limiter must not take the whole API down.
+open (logged) so an outage does not take the whole API down, except for the credential-facing
+scopes in `FAIL_CLOSED_SCOPES` in production, which answer 503 instead of going unthrottled.
 """
 
 import hashlib
@@ -14,12 +15,15 @@ from typing import Protocol
 from redis.asyncio import Redis
 
 from app.core.config import Settings
-from app.services.errors import RateLimitedError
+from app.services.errors import RateLimitedError, RateLimiterUnavailableError
 
 logger = logging.getLogger(__name__)
 
 _UNITS = {"second": 1, "minute": 60, "hour": 3600, "day": 86400}
 _SPEC = re.compile(r"^(\d+)/(\d+)?(second|minute|hour|day)s?$")
+
+
+FAIL_CLOSED_SCOPES = frozenset({"login_ip", "login_email", "refresh", "accept_invitation"})
 
 
 @dataclass(frozen=True)
@@ -83,8 +87,11 @@ class RedisBackend:
 
 
 class RateLimiter:
-    def __init__(self, backend: Backend) -> None:
+    def __init__(
+        self, backend: Backend, *, fail_closed_scopes: frozenset[str] = frozenset()
+    ) -> None:
         self._backend = backend
+        self._fail_closed_scopes = fail_closed_scopes
 
     async def check(self, scope: str, identity: str, limit: Limit) -> None:
         """Counts a hit for (scope, identity); raises RateLimitedError above the limit."""
@@ -93,6 +100,8 @@ class RateLimiter:
             count, ttl = await self._backend.hit(f"rl:{scope}:{digest}", limit.window_seconds)
         except Exception as exc:
             logger.error("rate limiter unavailable", extra={"error_type": type(exc).__name__})
+            if scope in self._fail_closed_scopes:
+                raise RateLimiterUnavailableError from exc
             return
         if count > limit.count:
             raise RateLimitedError(ttl)
@@ -104,4 +113,7 @@ class RateLimiter:
 def build_rate_limiter(settings: Settings) -> RateLimiter:
     if settings.rate_limit_backend == "memory":
         return RateLimiter(MemoryBackend())
-    return RateLimiter(RedisBackend(settings.rate_limit_redis_url or settings.celery_broker_url))
+    return RateLimiter(
+        RedisBackend(settings.rate_limit_redis_url or settings.celery_broker_url),
+        fail_closed_scopes=FAIL_CLOSED_SCOPES if settings.is_production else frozenset(),
+    )

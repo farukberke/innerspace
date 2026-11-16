@@ -111,9 +111,17 @@ RateLimiterDep = Annotated[RateLimiter, Depends(get_rate_limiter)]
 
 
 def client_ip(request: Request) -> str:
-    """The peer address. Behind a proxy run uvicorn with --proxy-headers/--forwarded-allow-ips
-    so this is the real client, never a spoofable header read by the app itself."""
-    return request.client.host if request.client else "unknown"
+    """The client address for rate limiting. With `TRUSTED_PROXY_HOPS=N` it is the Nth entry
+    from the right of X-Forwarded-For (what our own proxies appended); entries further left are
+    client-supplied and ignored. With 0 the header is ignored and the TCP peer is used."""
+    peer = request.client.host if request.client else "unknown"
+    hops = request.app.state.settings.trusted_proxy_hops
+    if hops < 1:
+        return peer
+    entries = [e.strip() for h in request.headers.getlist("x-forwarded-for") for e in h.split(",")]
+    if len(entries) < hops or not entries[-hops]:
+        return peer
+    return entries[-hops]
 
 
 def limit_per_ip(name: str) -> Callable[..., Awaitable[None]]:

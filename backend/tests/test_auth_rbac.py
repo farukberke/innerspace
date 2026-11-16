@@ -533,7 +533,9 @@ async def test_invitation_cannot_target_another_org_or_existing_email(
     # Foreign clinician id: looks non-existent. (There is no way to name another org.)
     r = await _invite(http, email="n@org-a.test", clinician_id=str(w.clin_b.id))
     assert r.status_code == 404
-    r = await _invite(http, email=w.client_b.email)  # already registered somewhere
+    # An e-mail registered in ANOTHER org is not revealed (see test_predeploy_fixes); in the
+    # same org the conflict is reported.
+    r = await _invite(http, email=w.client_a2.email)
     assert r.status_code == 409
     acting.user = w.clin_a
     # A clinician cannot choose a different clinician to assign to.

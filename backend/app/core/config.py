@@ -2,7 +2,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field, SecretStr, field_validator
+from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -26,6 +26,8 @@ class Settings(BaseSettings):
     jwt_secret: SecretStr = Field(min_length=32)
     access_token_minutes: int = Field(default=15, ge=1)
     refresh_token_days: int = Field(default=7, ge=1)
+    # Absolute session length, counted from login: refreshing never extends it.
+    session_max_days: int = Field(default=30, ge=1)
     invitation_hours: int = Field(default=72, ge=1)
     seed_password: SecretStr | None = None  # demo seed only
 
@@ -56,6 +58,11 @@ class Settings(BaseSettings):
     # Rolling 24h budget per user across all LLM calls (`llm_usage`); 0 disables a cap.
     llm_daily_request_limit: int = Field(default=200, ge=0)
     llm_daily_cost_limit_usd: float = Field(default=2.0, ge=0)
+
+    # Reverse proxies in front of the app (Render: 1). 0 = ignore X-Forwarded-For. With N > 0
+    # the client IP is the Nth entry from the right of X-Forwarded-For (appended by our own
+    # proxies, so not spoofable); anything further left is client-controlled and ignored.
+    trusted_proxy_hops: int = Field(default=0, ge=0, le=10)
 
     # Observability. Tracing is off without a token; content is never sent either way.
     logfire_token: SecretStr | None = None
@@ -105,6 +112,12 @@ class Settings(BaseSettings):
         if "*" in value:
             raise ValueError("CORS_ORIGINS must list explicit origins, not a wildcard")
         return value
+
+    @model_validator(mode="after")
+    def _production_needs_shared_rate_limiter(self) -> "Settings":
+        if self.app_env == "production" and self.rate_limit_backend == "memory":
+            raise ValueError("RATE_LIMIT_BACKEND=memory is not allowed when APP_ENV=production")
+        return self
 
     @property
     def cors_origin_list(self) -> list[str]:

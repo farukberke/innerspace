@@ -57,7 +57,10 @@ async def create_invitation(
             raise NotFoundError
 
     email = normalize_email(email)
-    if await session.scalar(select(User.id).where(User.email == email)):
+    # E-mails are globally unique, so an existing address in ANOTHER organization must not be
+    # revealed: the invitation is created and only acceptance fails (generic error).
+    existing_org = await session.scalar(select(User.organization_id).where(User.email == email))
+    if existing_org == inviter.organization_id:
         raise ConflictError("A user with this e-mail already exists")
 
     token, token_hash = new_invitation_token()
@@ -128,6 +131,7 @@ async def accept_invitation(
                     organization_id=user.organization_id,
                     clinician_id=invitation.assign_clinician_id,
                     client_id=user.id,
+                    created_at=now,
                 )
             )
             await session.flush()

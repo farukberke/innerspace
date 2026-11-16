@@ -56,6 +56,18 @@ async def refresh(
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid refresh token") from None
 
 
+@router.post(
+    "/logout",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(limit_per_ip("refresh"))],
+)
+async def logout(
+    session: SessionDep, settings: SettingsDep, data: Annotated[RefreshRequest, Body()]
+) -> None:
+    """Revokes the refresh token's session. Always 204 (idempotent, reveals nothing)."""
+    await service.logout(session, settings, data.refresh_token)
+
+
 @router.get("/me")
 async def me(user: CurrentUser) -> UserRead:
     return UserRead.model_validate(user)

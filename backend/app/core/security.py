@@ -45,7 +45,13 @@ async def verify_password(password: str, password_hash: str | None) -> bool:
 
 
 def create_token(
-    settings: Settings, user_id: uuid.UUID, token_type: TokenType, *, now: datetime | None = None
+    settings: Settings,
+    user_id: uuid.UUID,
+    token_type: TokenType,
+    *,
+    now: datetime | None = None,
+    expires_at: datetime | None = None,
+    jti: str | None = None,
 ) -> str:
     now = now or datetime.now(UTC)
     ttl = (
@@ -57,24 +63,31 @@ def create_token(
         "sub": str(user_id),
         "type": token_type.value,
         "iat": now,
-        "exp": now + ttl,
-        "jti": uuid.uuid4().hex,
+        "exp": expires_at or now + ttl,
+        "jti": jti or uuid.uuid4().hex,
     }
     return jwt.encode(claims, settings.jwt_secret.get_secret_value(), algorithm=JWT_ALGORITHM)
 
 
 def decode_token(settings: Settings, token: str, expected: TokenType) -> uuid.UUID:
     """Returns the user id, or raises TokenError for any invalid/expired/wrong-type token."""
+    return decode_token_with_jti(settings, token, expected)[0]
+
+
+def decode_token_with_jti(
+    settings: Settings, token: str, expected: TokenType
+) -> tuple[uuid.UUID, str]:
+    """Like `decode_token` but also returns the token id (`jti`)."""
     try:
         claims = jwt.decode(
             token,
             settings.jwt_secret.get_secret_value(),
             algorithms=[JWT_ALGORITHM],
-            options={"require": ["exp", "iat", "sub", "type"]},
+            options={"require": ["exp", "iat", "sub", "type", "jti"]},
         )
         if claims["type"] != expected.value:
             raise TokenError("wrong token type")
-        return uuid.UUID(claims["sub"])
+        return uuid.UUID(claims["sub"]), str(claims["jti"])
     except (jwt.PyJWTError, ValueError, KeyError) as exc:
         raise TokenError("invalid token") from exc
 

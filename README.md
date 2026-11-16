@@ -20,7 +20,7 @@
 | 3 | AI summaries: structured output, citations, guardrails, human-in-the-loop sharing | ✅ Done |
 | 4 | Background jobs (Redis, Celery), retries, idempotency | ✅ Done |
 | 5 | AI evaluation, rate limiting, observability, LLM tracing | ✅ Done |
-| 6 | Docker, CI/CD, AWS deployment | ⏭ Next |
+| 6 | Docker, CI/CD, Render deployment | ⏭ Next |
 | — | React + TypeScript frontend, built alongside the backend | ✅ Done (client, clinician and clinic-admin screens) |
 
 ## What it does (planned v1)
@@ -75,7 +75,10 @@ API docs: http://localhost:8000/docs (disabled in production). Health: `/health`
 ### Evaluation, rate limiting and observability (Phase 5)
 
 - **Offline AI evals** (`backend/evals/`, synthetic TR+EN data, enforced by `pytest tests/test_evals.py`): crisis detection (zero false negatives required), guardrail recall/false positives, prompt-injection attacks against a "model that obeys" (nothing may be stored), citation faithfulness. Report: `uv run python -m evals.offline` or `pytest -s tests/test_evals.py`. A paid, real-model evaluation exists as `uv run python -m evals.run_live --max-requests N`; it is never run by tests or CI.
-- **Rate limits** (Redis; `429` + `Retry-After`): login (per IP and per account), refresh, invitation acceptance, summary generation, after-session notes, plus a per-user rolling 24h LLM request/cost budget from `llm_usage`. All limits are env-configurable (see `.env.example`).
+- **Rate limits** (Redis; `429` + `Retry-After`): login (per IP and per account), refresh, invitation acceptance, summary generation, after-session notes, plus a per-user rolling 24h LLM request/cost budget from `llm_usage`. All limits are env-configurable (see `.env.example`). With `APP_ENV=production` the limiter must be Redis-backed (`memory` is rejected at startup) and the login/refresh/invitation scopes fail closed (`503` + `Retry-After`) if Redis is down.
+- **Client IP behind a proxy:** set `TRUSTED_PROXY_HOPS` to the number of proxies you run (Render: `1`); the limiter then uses the Nth entry from the right of `X-Forwarded-For`, so a client-supplied header cannot dodge limits. `0` (default) ignores the header. The container runs uvicorn with `--no-proxy-headers` so only this logic decides.
+- **Sessions:** refresh tokens rotate on every use (jti stored in `refresh_tokens`); replaying a used token revokes the whole session family; `POST /api/v1/auth/logout` revokes it; sessions end `SESSION_MAX_DAYS` (30) after login.
+- **Sharing:** a clinician sees a shared summary only if it was shared after their assignment began; a newly assigned clinician sees older summaries only after the client shares them again.
 - **Observability:** `X-Request-ID` in/out (also carried into Celery job logs), JSON logs without content, `/metrics` (Prometheus text; 404 unless `METRICS_TOKEN` is set), stale `running` job reaper (Celery beat, `--beat` in the compose worker).
 - **LLM tracing:** Logfire, enabled only when `LOGFIRE_TOKEN` is set, with content export disabled (only span names, timings, model and token counts). Logfire was chosen over LangSmith because Pydantic AI instruments natively through OpenTelemetry (no extra SDK in the call path) and content exclusion is a single setting; LangSmith's stronger prompt/dataset management is not needed because evals run offline in pytest.
 

@@ -39,3 +39,11 @@ class RateLimitedError(Exception):
     def __init__(self, retry_after: int) -> None:
         super().__init__("rate limited")
         self.retry_after = max(1, retry_after)
+
+
+class RateLimiterUnavailableError(Exception):
+    """The limiter backend is down and the scope is security-critical (fail closed)."""
+
+    def __init__(self, retry_after: int = 30) -> None:
+        super().__init__("rate limiter unavailable")
+        self.retry_after = retry_after

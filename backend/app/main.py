@@ -12,7 +12,7 @@ from app.core.logging import configure_logging
 from app.core.middleware import RequestContextMiddleware
 from app.core.ratelimit import build_rate_limiter
 from app.core.tracing import configure_tracing
-from app.services.errors import RateLimitedError
+from app.services.errors import RateLimitedError, RateLimiterUnavailableError
 
 API_PREFIX = "/api/v1"
 
@@ -49,6 +49,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return JSONResponse(
             {"detail": "Too many requests", "error_code": "rate_limited"},
             status_code=429,
+            headers={"Retry-After": str(exc.retry_after)},
+        )
+
+    @app.exception_handler(RateLimiterUnavailableError)
+    async def _limiter_unavailable(
+        _request: Request, exc: RateLimiterUnavailableError
+    ) -> JSONResponse:
+        return JSONResponse(
+            {"detail": "Service temporarily unavailable", "error_code": "limiter_unavailable"},
+            status_code=503,
             headers={"Retry-After": str(exc.retry_after)},
         )
 

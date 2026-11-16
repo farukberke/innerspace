@@ -35,7 +35,7 @@ async def test_cors_rejects_other_origin(test_settings: Settings) -> None:
 
 
 async def test_cors_off_by_default(test_settings: Settings) -> None:
-    headers = await _preflight(test_settings, "http://localhost:5173")
+    headers = await _preflight(_settings(test_settings, ""), "http://localhost:5173")
     assert "access-control-allow-origin" not in headers
 
 

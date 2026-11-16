@@ -23,6 +23,15 @@ export const authApi = {
     const pair = await request<TokenPair>('/auth/login', { method: 'POST', body: { email, password }, auth: false })
     tokens.set(pair)
   },
+  /** Revokes the refresh token server-side. Never throws: the local session is cleared regardless. */
+  async logout(refreshToken: string | null): Promise<void> {
+    if (!refreshToken) return
+    try {
+      await request<void>('/auth/logout', { method: 'POST', body: { refresh_token: refreshToken }, auth: false })
+    } catch {
+      // network/server error: the caller still ends the local session
+    }
+  },
   me: () => request<User>('/auth/me'),
   acceptInvitation: (token: string, password: string, display_name: string) =>
     request<User>('/auth/accept-invitation', { method: 'POST', body: { token, password, display_name }, auth: false }),

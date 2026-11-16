@@ -15,6 +15,7 @@ from app.models.care import (
 )
 from app.models.entry import Entry, EntryKind
 from app.models.organization import Organization
+from app.models.refresh_token import RefreshToken
 from app.models.user import User, UserRole
 
 __all__ = [
@@ -29,6 +30,7 @@ __all__ = [
     "Invitation",
     "LlmUsage",
     "Organization",
+    "RefreshToken",
     "Summary",
     "SummaryCitation",
     "SummaryJob",

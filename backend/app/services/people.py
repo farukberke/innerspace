@@ -1,6 +1,7 @@
 """Org-admin management of users and clinician-client assignments (no clinical content)."""
 
 import uuid
+from datetime import UTC, datetime
 
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
@@ -69,7 +70,10 @@ async def create_assignment(
     if duplicate is not None:
         raise ConflictError("Assignment already exists")
     assignment = CareAssignment(
-        organization_id=admin.organization_id, clinician_id=clinician_id, client_id=client_id
+        organization_id=admin.organization_id,
+        clinician_id=clinician_id,
+        client_id=client_id,
+        created_at=datetime.now(UTC),
     )
     session.add(assignment)
     try:
