@@ -40,6 +40,7 @@ from app.models import (
     User,
     UserRole,
 )
+from app.services import jobs
 from tests.conftest import FakeLlm
 
 API = "/api/v1"
@@ -149,10 +150,47 @@ def after_output(**kw: list[str]) -> dict[str, Any]:
     return {"discussed": [], "to_try": [], "questions": [], **kw}
 
 
+class Outcome:
+    """What the former synchronous endpoint answered, rebuilt from the job result."""
+
+    def __init__(self, status_code: int, body: dict[str, Any]) -> None:
+        self.status_code, self._body, self.text = status_code, body, json.dumps(body)
+
+    def json(self) -> dict[str, Any]:
+        return self._body
+
+
+_FAILURE_STATUS = {"generation_failed": 502, "validation_failed": 422}
+
+
+async def _run_generate(http: AsyncClient, acting, body: dict[str, Any] | None = None) -> Any:
+    """POST /summaries/generate, run the queued job the way the worker does, then report in the
+    shape of the old synchronous endpoint (201 summary / 200 crisis / 502, 422 errors)."""
+    response = await http.post(f"{API}/summaries/generate", json=body or PERIOD)
+    if response.status_code != 202:
+        return response
+    job_id = uuid.UUID(response.json()["id"])
+    assert acting.jobq.ids == [job_id]
+    await jobs.run(
+        acting.session, acting.settings, acting_model(acting), job_id, final_attempt=False
+    )
+    job = (await http.get(f"{API}/summaries/jobs/{job_id}")).json()
+    if job["status"] == "succeeded":
+        return Outcome(201, (await http.get(f"{API}/summaries/{job['summary_id']}")).json())
+    if job["status"] == "crisis":
+        return Outcome(200, job["crisis"])
+    return Outcome(_FAILURE_STATUS[job["error_code"]], job)
+
+
+def acting_model(acting) -> Any:
+    return acting.llm.model
+
+
 async def _generate(http: AsyncClient, acting, user: User, llm: FakeLlm, script: Script, **body):
     acting.user = user
     llm.model = script.model
-    return await http.post(f"{API}/summaries/generate", json=body or PERIOD)
+    acting.llm = llm
+    return await _run_generate(http, acting, body or None)
 
 
 # --- Generation: scoping and citation validation ---------------------------------------
@@ -504,7 +542,8 @@ async def test_injected_record_text_cannot_widen_tool_scope(
 
     acting.user = w.client
     llm.model = FunctionModel(compromised)
-    response = await http.post(f"{API}/summaries/generate", json=PERIOD)
+    acting.llm = llm
+    response = await _run_generate(http, acting)
     assert response.status_code == 502  # foreign citations rejected, nothing stored
     # The tool has no client/org parameters: the injected arguments were rejected outright.
     assert entry_data, "the model must have received the scoped entries"

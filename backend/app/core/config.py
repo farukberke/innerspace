@@ -38,6 +38,11 @@ class Settings(BaseSettings):
     llm_input_usd_per_mtok: float = Field(default=3.0, ge=0)
     llm_output_usd_per_mtok: float = Field(default=15.0, ge=0)
 
+    # Background jobs (Celery). Task payloads carry only a job id; results are never stored.
+    celery_broker_url: str = "redis://localhost:6380/0"
+    job_max_retries: int = Field(default=3, ge=0, le=10)  # transient failures only
+    job_retry_backoff_seconds: int = Field(default=10, ge=1)  # doubles every retry
+
     @field_validator("jwt_secret")
     @classmethod
     def _reject_placeholder_secret(cls, value: SecretStr) -> SecretStr:

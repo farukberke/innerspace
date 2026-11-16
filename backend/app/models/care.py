@@ -15,6 +15,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
     func,
+    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -117,6 +118,55 @@ class Summary(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         cascade="all, delete-orphan",
         lazy="selectin",
     )
+
+
+class SummaryJobStatus(StrEnum):
+    QUEUED = "queued"
+    RUNNING = "running"
+    SUCCEEDED = "succeeded"
+    FAILED = "failed"
+    CRISIS = "crisis"  # crisis language found: nothing generated, fixed crisis response shown
+
+
+class SummaryJob(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Background summary generation for one client and period. Holds no content: failures are
+    recorded as a short `error_code` only.
+
+    Idempotency: an explicit `idempotency_key` is unique per client; without a key at most one
+    queued/running job per client and period exists (partial unique index).
+    """
+
+    __tablename__ = "summary_jobs"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["client_id", "organization_id"],
+            ["users.id", "users.organization_id"],
+            ondelete="CASCADE",
+        ),
+        UniqueConstraint("client_id", "idempotency_key", name="uq_summary_jobs_idempotency"),
+        Index(
+            "uq_summary_jobs_active_period",
+            "client_id",
+            "period_start",
+            "period_end",
+            unique=True,
+            postgresql_where=text("idempotency_key IS NULL AND status IN ('queued', 'running')"),
+        ),
+    )
+
+    organization_id: Mapped[uuid.UUID]
+    client_id: Mapped[uuid.UUID]
+    period_start: Mapped[date] = mapped_column(Date)
+    period_end: Mapped[date] = mapped_column(Date)
+    status: Mapped[SummaryJobStatus] = mapped_column(
+        str_enum(SummaryJobStatus, "summary_job_status"), default=SummaryJobStatus.QUEUED
+    )
+    summary_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("summaries.id", ondelete="SET NULL")
+    )
+    error_code: Mapped[str | None] = mapped_column(String(64))
+    attempts: Mapped[int] = mapped_column(default=0)
+    idempotency_key: Mapped[str | None] = mapped_column(String(128))
 
 
 class SummaryStatement(UUIDPrimaryKeyMixin, Base):

@@ -8,6 +8,8 @@ from app.models.care import (
     LlmUsage,
     Summary,
     SummaryCitation,
+    SummaryJob,
+    SummaryJobStatus,
     SummaryStatement,
     SummaryStatus,
 )
@@ -29,6 +31,8 @@ __all__ = [
     "Organization",
     "Summary",
     "SummaryCitation",
+    "SummaryJob",
+    "SummaryJobStatus",
     "SummaryStatement",
     "SummaryStatus",
     "User",

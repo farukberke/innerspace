@@ -4,7 +4,7 @@ from typing import Annotated, Self
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
 
-from app.models import Summary, SummaryStatus, UserRole
+from app.models import Summary, SummaryJobStatus, SummaryStatus, UserRole
 
 MAX_PERIOD_DAYS = 92
 
@@ -204,3 +204,20 @@ class AfterSessionRead(BaseModel):
     to_try: list[str]
     questions: list[str]
     created_at: datetime
+
+
+class SummaryJobRead(BaseModel):
+    """Status of a background summary generation. Never contains content."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    status: SummaryJobStatus
+    period_start: date
+    period_end: date
+    summary_id: uuid.UUID | None
+    error_code: str | None
+    attempts: int
+    created_at: datetime
+    updated_at: datetime
+    crisis: CrisisResponse | None = None  # set (fixed text) when status is "crisis"

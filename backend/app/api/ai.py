@@ -1,20 +1,23 @@
 import logging
+import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Body, HTTPException, Response, status
+from fastapi import APIRouter, Body, Header, HTTPException, Response, status
 
 from app.ai.crisis import CRISIS_MESSAGE, CRISIS_RESOURCES
 from app.ai.llm import AiGenerationError
-from app.api.deps import CurrentClient, LlmModelDep, SessionDep, SettingsDep
+from app.api.deps import CurrentClient, JobEnqueuerDep, LlmModelDep, SessionDep, SettingsDep
+from app.models import SummaryJobStatus
 from app.schemas.care import (
     AfterSessionCreate,
     AfterSessionRead,
     CrisisResponse,
     SummaryGenerate,
-    SummaryRead,
+    SummaryJobRead,
 )
 from app.services import ai as service
-from app.services.errors import CrisisDetectedError, ValidationFailedError
+from app.services import jobs
+from app.services.errors import ConflictError, CrisisDetectedError, NotFoundError
 
 router = APIRouter(tags=["ai"])
 logger = logging.getLogger(__name__)
@@ -30,29 +33,50 @@ def _generation_failed(exc: AiGenerationError) -> HTTPException:
     )
 
 
-@router.post("/summaries/generate", status_code=status.HTTP_201_CREATED)
+@router.post("/summaries/generate", status_code=status.HTTP_202_ACCEPTED)
 async def generate_summary(
-    response: Response,
     session: SessionDep,
-    settings: SettingsDep,
     client: CurrentClient,
-    model: LlmModelDep,
+    _model: LlmModelDep,  # 503 before any job exists when AI is not configured
+    enqueue: JobEnqueuerDep,
     data: Annotated[SummaryGenerate, Body()],
-) -> SummaryRead | CrisisResponse:
-    """Creates a private AI *draft* from the client's own entries in the period. If crisis
-    language is found nothing is generated and a fixed crisis response (HTTP 200) is returned."""
+    idempotency_key: Annotated[
+        str | None, Header(min_length=1, max_length=128, pattern=r"^[!-~]+$")
+    ] = None,
+) -> SummaryJobRead:
+    """Queues generation of a private AI *draft* from the client's own entries in the period and
+    returns the job at once. Repeating the request (same `Idempotency-Key`, or without a key
+    while a job for the same period is active) returns the existing job."""
     try:
-        summary = await service.generate_summary(
-            session, settings, model, client, data.period_start, data.period_end
+        job, created = await jobs.create_or_get(
+            session, client, data.period_start, data.period_end, idempotency_key
         )
-    except CrisisDetectedError:
-        response.status_code = status.HTTP_200_OK  # not a created resource
-        return _CRISIS
-    except ValidationFailedError as exc:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, exc.message) from None
-    except AiGenerationError as exc:
-        raise _generation_failed(exc) from None
-    return SummaryRead.from_model(summary)
+    except ConflictError as exc:
+        raise HTTPException(status.HTTP_409_CONFLICT, exc.message) from None
+    if created:
+        try:
+            enqueue(job.id)
+        except Exception as exc:
+            logger.error("could not enqueue summary job", extra={"error_type": type(exc).__name__})
+            await jobs.fail_queued(session, job.id, "enqueue_failed")
+            raise HTTPException(
+                status.HTTP_503_SERVICE_UNAVAILABLE, "Background processing is not available"
+            ) from None
+    return SummaryJobRead.model_validate(job)
+
+
+@router.get("/summaries/jobs/{job_id}")
+async def get_summary_job(
+    session: SessionDep, client: CurrentClient, job_id: uuid.UUID
+) -> SummaryJobRead:
+    try:
+        job = await jobs.get_own(session, client, job_id)
+    except NotFoundError:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Job not found") from None
+    read = SummaryJobRead.model_validate(job)
+    if job.status == SummaryJobStatus.CRISIS:
+        read.crisis = _CRISIS
+    return read
 
 
 @router.post("/after-session-notes", status_code=status.HTTP_201_CREATED)

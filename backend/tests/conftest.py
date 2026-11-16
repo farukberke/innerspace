@@ -5,6 +5,7 @@ same server (created by docker compose). Migrations are applied once per run; ev
 runs inside a transaction that is rolled back afterwards.
 """
 
+import uuid
 from collections.abc import AsyncIterator, Callable, Iterator
 from pathlib import Path
 
@@ -17,7 +18,7 @@ from sqlalchemy import make_url
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
 
 from alembic import command
-from app.api.deps import get_llm_model, get_session
+from app.api.deps import get_job_enqueuer, get_llm_model, get_session
 from app.core.config import Settings, get_settings
 from app.core.security import TokenType, create_token, hash_password
 from app.main import create_app
@@ -147,6 +148,9 @@ class ActingUser:
         self._client: AsyncClient | None = None
         self._user: User | None = None
         self.session: AsyncSession | None = None  # the test's DB session (for arranging data)
+        self.jobq: FakeQueue | None = None
+        self.llm: FakeLlm | None = None
+        self.settings = settings
 
     @property
     def user(self) -> User | None:
@@ -181,9 +185,32 @@ def llm() -> FakeLlm:
     return FakeLlm()
 
 
+class FakeQueue:
+    """Stands in for Celery/Redis: records the job ids handed to the queue (nothing runs).
+    Tests run jobs explicitly via `app.services.jobs.run`."""
+
+    def __init__(self) -> None:
+        self.ids: list[uuid.UUID] = []
+        self.broken = False
+
+    def __call__(self, job_id: uuid.UUID) -> None:
+        if self.broken:
+            raise ConnectionError("broker down")
+        self.ids.append(job_id)
+
+
+@pytest.fixture
+def jobq() -> FakeQueue:
+    return FakeQueue()
+
+
 @pytest.fixture
 async def http(
-    test_settings: Settings, db_session: AsyncSession, acting: ActingUser, llm: FakeLlm
+    test_settings: Settings,
+    db_session: AsyncSession,
+    acting: ActingUser,
+    llm: FakeLlm,
+    jobq: FakeQueue,
 ) -> AsyncIterator[AsyncClient]:
     app = create_app(test_settings)
 
@@ -197,7 +224,9 @@ async def http(
 
     app.dependency_overrides[get_session] = _session
     app.dependency_overrides[get_llm_model] = _model
+    app.dependency_overrides[get_job_enqueuer] = lambda: jobq
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         acting._client = client
         acting.session = db_session
+        acting.jobq = jobq
         yield client

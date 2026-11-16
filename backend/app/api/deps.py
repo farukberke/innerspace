@@ -1,3 +1,4 @@
+import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable
 from typing import Annotated
 
@@ -86,3 +87,16 @@ def get_llm_model(settings: SettingsDep) -> Model:
 
 
 LlmModelDep = Annotated[Model, Depends(get_llm_model)]
+
+
+JobEnqueuer = Callable[[uuid.UUID], None]
+
+
+def get_job_enqueuer() -> JobEnqueuer:
+    """Hands a job id to the Celery queue. Tests override this dependency (no Redis needed)."""
+    from app.worker import enqueue_summary_job  # noqa: PLC0415  (keeps Celery out of app import)
+
+    return enqueue_summary_job
+
+
+JobEnqueuerDep = Annotated[JobEnqueuer, Depends(get_job_enqueuer)]

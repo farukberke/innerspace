@@ -5,6 +5,14 @@ import uuid
 from decimal import Decimal
 
 from pydantic_ai import Agent
+from pydantic_ai.exceptions import (
+    ModelConnectionError,
+    ModelHTTPError,
+    ModelRateLimitError,
+    ModelRequestTimeout,
+    ModelServerError,
+    ModelUnavailableError,
+)
 from pydantic_ai.models import Model
 from pydantic_ai.models.anthropic import AnthropicModel
 from pydantic_ai.providers.anthropic import AnthropicProvider
@@ -21,14 +29,35 @@ class AiUnavailableError(Exception):
 
 
 class AiGenerationError(Exception):
-    """The model failed, or never produced output that passed validation and guardrails."""
+    """The model failed, or never produced output that passed validation and guardrails.
+    `transient` marks provider-side trouble (timeout, 5xx, rate limit) worth retrying later."""
+
+    def __init__(self, message: str, *, transient: bool = False) -> None:
+        super().__init__(message)
+        self.transient = transient
+
+
+_TRANSIENT_ERRORS = (
+    ModelConnectionError,
+    ModelRateLimitError,
+    ModelServerError,
+    ModelUnavailableError,
+    ModelRequestTimeout,
+    TimeoutError,
+)
+
+
+def is_transient(exc: Exception) -> bool:
+    if isinstance(exc, ModelHTTPError):
+        return exc.status_code == 429 or exc.status_code >= 500
+    return isinstance(exc, _TRANSIENT_ERRORS)
 
 
 def build_model(settings: Settings) -> Model:
     provider, _, name = settings.llm_model.partition(":")
     if provider != "anthropic" or not name:
         raise AiUnavailableError("unsupported LLM provider")
-    if settings.anthropic_api_key is None:
+    if settings.anthropic_api_key is None or not settings.anthropic_api_key.get_secret_value():
         raise AiUnavailableError("LLM API key is not configured")
     return AnthropicModel(
         name, provider=AnthropicProvider(api_key=settings.anthropic_api_key.get_secret_value())
@@ -71,7 +100,7 @@ async def run_agent[DepsT, OutT](
         success = True
         return result.output
     except Exception as exc:
-        raise AiGenerationError(type(exc).__name__) from None
+        raise AiGenerationError(type(exc).__name__, transient=is_transient(exc)) from None
     finally:
         session.add(
             LlmUsage(

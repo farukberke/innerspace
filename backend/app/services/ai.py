@@ -18,6 +18,8 @@ from app.models import (
     Entry,
     Summary,
     SummaryCitation,
+    SummaryJob,
+    SummaryJobStatus,
     SummaryStatement,
     SummaryStatus,
     User,
@@ -61,8 +63,16 @@ def _to_statements(draft: SummaryDraft) -> list[SummaryStatement]:
 
 
 async def generate_summary(
-    session: AsyncSession, settings: Settings, model: Model, client: User, start: date, end: date
+    session: AsyncSession,
+    settings: Settings,
+    model: Model,
+    client: User,
+    start: date,
+    end: date,
+    job: SummaryJob | None = None,
 ) -> Summary:
+    """If a background `job` is given it is marked succeeded in the same transaction that
+    stores the summary, so a summary never exists without its job being settled."""
     lo, hi = _period_bounds(start, end)
     entries = (
         await session.scalars(
@@ -117,6 +127,10 @@ async def generate_summary(
         target_id=summary.id,
         detail={"entries": len(entries), "statements": len(statements)},
     )
+    if job is not None:
+        job.status = SummaryJobStatus.SUCCEEDED
+        job.summary_id = summary.id
+        job.error_code = None
     await session.commit()
     return summary
 
