@@ -78,7 +78,8 @@ describe('role based routing', () => {
     })
     renderAt('/client/entries')
     expect(await screen.findByRole('heading', { name: 'Danışanlarım' })).toBeInTheDocument()
-    expect(screen.getByText('Danışan Bir')).toBeInTheDocument()
+    // The heading renders before the client list request resolves: wait for the list itself.
+    expect(await screen.findByText('Danışan Bir')).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Kayıtlarım' })).not.toBeInTheDocument()
   })
 
