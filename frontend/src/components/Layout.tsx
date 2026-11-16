@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { NavLink, Outlet } from 'react-router-dom'
+import { Link, NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { ROLE_LABEL } from '../auth/roles'
 import type { UserRole } from '../api/types'
@@ -17,6 +17,8 @@ const NAV: Record<UserRole, { to: string; label: string }[]> = {
   client: [
     { to: '/client/entries', label: 'Kayıtlarım' },
     { to: '/client/summaries', label: 'Özetlerim' },
+    { to: '/client/appointments', label: 'Randevularım' },
+    { to: '/client/plan', label: 'Planım' },
     { to: '/client/after-session', label: 'Seans sonrası' },
   ],
   clinician: [
@@ -43,6 +45,14 @@ export function Layout() {
       <header className="relative border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3">
           <span className="text-lg font-semibold text-indigo-700">InnerSpace</span>
+          {user.role === 'client' && (
+            <Link
+              to="/client/moment"
+              className="rounded-lg bg-rose-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-rose-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400"
+            >
+              O an
+            </Link>
+          )}
           <button
             type="button"
             className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm md:hidden"

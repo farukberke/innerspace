@@ -11,7 +11,7 @@ from app.schemas.care import (
     SummaryRead,
     SummaryUpdate,
 )
-from app.services import people
+from app.services import appointments, people
 from app.services import summaries as service
 from app.services.errors import ConflictError, NotFoundError, ValidationFailedError
 
@@ -104,7 +104,11 @@ async def unshare_summary(
 @router.get("/clinician/clients")
 async def list_clients(session: SessionDep, clinician: CurrentClinician) -> list[ClientRead]:
     clients = await people.list_assigned_clients(session, clinician)
-    return [ClientRead.model_validate(c) for c in clients]
+    upcoming = await appointments.next_for_clients(session, clinician, [c.id for c in clients])
+    items = [ClientRead.model_validate(c) for c in clients]
+    for item in items:
+        item.next_appointment_at = upcoming.get(item.id)
+    return items
 
 
 @router.get("/clinician/summaries")

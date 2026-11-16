@@ -12,6 +12,7 @@ from app.models.care import (
     SummaryJobStatus,
     SummaryStatement,
     SummaryStatus,
+    SupportPlan,
 )
 from app.models.entry import Entry, EntryKind
 from app.models.organization import Organization
@@ -37,6 +38,7 @@ __all__ = [
     "SummaryJobStatus",
     "SummaryStatement",
     "SummaryStatus",
+    "SupportPlan",
     "User",
     "UserRole",
 ]

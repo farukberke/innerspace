@@ -130,3 +130,26 @@ async def list_assigned_clients(session: AsyncSession, clinician: User) -> list[
         .order_by(User.display_name, User.id)
     )
     return list((await session.scalars(query)).all())
+
+
+async def get_assigned_client(session: AsyncSession, clinician: User, client_id: uuid.UUID) -> User:
+    """The active client, only if assigned to this clinician in the same organization."""
+    query = (
+        select(User)
+        .join(
+            CareAssignment,
+            (CareAssignment.client_id == User.id)
+            & (CareAssignment.organization_id == User.organization_id),
+        )
+        .where(
+            User.id == client_id,
+            User.role == UserRole.CLIENT,
+            User.is_active.is_(True),
+            CareAssignment.clinician_id == clinician.id,
+            CareAssignment.organization_id == clinician.organization_id,
+        )
+    )
+    client = await session.scalar(query)
+    if client is None:
+        raise NotFoundError
+    return client

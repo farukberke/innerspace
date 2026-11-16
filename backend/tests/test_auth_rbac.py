@@ -341,7 +341,7 @@ async def test_clinician_sees_only_assigned_clients(http: AsyncClient, acting, w
     acting.user = w.clin_a
     clients = (await http.get(f"{API}/clinician/clients")).json()
     assert [c["id"] for c in clients] == [str(w.client_a.id)]
-    assert set(clients[0]) == {"id", "display_name"}
+    assert set(clients[0]) == {"id", "display_name", "next_appointment_at"}
     acting.user = w.clin_a2
     assert (await http.get(f"{API}/clinician/clients")).json() == []
     acting.user = w.client_a

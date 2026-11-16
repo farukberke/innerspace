@@ -3,6 +3,7 @@ import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, Header, HTTPException, Response, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.crisis import CRISIS_MESSAGE, CRISIS_RESOURCES
 from app.ai.llm import AiGenerationError
@@ -14,7 +15,7 @@ from app.api.deps import (
     SettingsDep,
     limit_per_user,
 )
-from app.models import SummaryJobStatus
+from app.models import SummaryJobStatus, User
 from app.schemas.care import (
     AfterSessionCreate,
     AfterSessionRead,
@@ -23,13 +24,17 @@ from app.schemas.care import (
     SummaryJobRead,
 )
 from app.services import ai as service
-from app.services import jobs, usage
+from app.services import appointments, jobs, plans, usage
 from app.services.errors import ConflictError, CrisisDetectedError, NotFoundError
 
 router = APIRouter(tags=["ai"])
 logger = logging.getLogger(__name__)
 
-_CRISIS = CrisisResponse(message=CRISIS_MESSAGE, resources=CRISIS_RESOURCES)
+
+async def _crisis(session: AsyncSession, client: User) -> CrisisResponse:
+    """The fixed crisis response plus the client's own Planım contacts (nothing generated)."""
+    contacts = await plans.crisis_contacts(session, client)
+    return CrisisResponse(message=CRISIS_MESSAGE, resources=CRISIS_RESOURCES, contacts=contacts)
 
 
 def _generation_failed(exc: AiGenerationError) -> HTTPException:
@@ -60,9 +65,20 @@ async def generate_summary(
     returns the job at once. Repeating the request (same `Idempotency-Key`, or without a key
     while a job for the same period is active) returns the existing job."""
     await usage.check_daily_budget(session, settings, client)  # 429 before any job exists
+    start, end = data.period_start, data.period_end
+    if data.appointment_id is not None:
+        try:
+            default_start, default_end = await appointments.default_summary_period(
+                session, client, data.appointment_id
+            )
+        except NotFoundError:  # not this client's appointment
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Appointment not found") from None
+        start, end = start or default_start, end or default_end
+    if start is None or end is None:  # unreachable: SummaryGenerate requires one of them
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Period required")
     try:
         job, created = await jobs.create_or_get(
-            session, client, data.period_start, data.period_end, idempotency_key
+            session, client, start, end, idempotency_key, data.appointment_id
         )
     except ConflictError as exc:
         raise HTTPException(status.HTTP_409_CONFLICT, exc.message) from None
@@ -88,7 +104,7 @@ async def get_summary_job(
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Job not found") from None
     read = SummaryJobRead.model_validate(job)
     if job.status == SummaryJobStatus.CRISIS:
-        read.crisis = _CRISIS
+        read.crisis = await _crisis(session, client)
     return read
 
 
@@ -110,7 +126,7 @@ async def create_after_session_note(
         note = await service.create_after_session_note(session, settings, model, client, data.text)
     except CrisisDetectedError:
         response.status_code = status.HTTP_200_OK  # not a created resource
-        return _CRISIS
+        return await _crisis(session, client)
     except AiGenerationError as exc:
         raise _generation_failed(exc) from None
     return AfterSessionRead.model_validate(note)

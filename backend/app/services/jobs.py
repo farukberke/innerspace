@@ -52,7 +52,12 @@ async def _find(
 
 
 async def create_or_get(
-    session: AsyncSession, client: User, start: date, end: date, key: str | None
+    session: AsyncSession,
+    client: User,
+    start: date,
+    end: date,
+    key: str | None,
+    appointment_id: uuid.UUID | None = None,
 ) -> tuple[SummaryJob, bool]:
     """Returns (job, created). The database unique constraints decide races: the loser of a
     concurrent insert gets the winner's job."""
@@ -66,6 +71,7 @@ async def create_or_get(
             status=SummaryJobStatus.QUEUED,
             attempts=0,
             idempotency_key=key,
+            appointment_id=appointment_id,
         )
         try:
             async with session.begin_nested():
@@ -77,7 +83,11 @@ async def create_or_get(
         else:
             await session.commit()
             return job, True
-    if (existing.period_start, existing.period_end) != (start, end):
+    if (existing.period_start, existing.period_end, existing.appointment_id) != (
+        start,
+        end,
+        appointment_id,
+    ):
         raise ConflictError("Idempotency-Key was already used with a different request")
     return existing, False
 

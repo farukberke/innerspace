@@ -8,7 +8,7 @@
 
 ## Status
 
-🚧 **Active development.** Phases 1 (backend foundation), 2 (authentication & authorization), 3 (AI summaries), 4 (background jobs), 5 (evaluation, rate limiting, observability) and the React frontend are complete; Phase 6 (Docker, CI, Render Blueprint) is done; the live deployment itself has not been created yet.
+🚧 **Active development.** Phases 1 (backend foundation), 2 (authentication & authorization), 3 (AI summaries), 4 (background jobs), 5 (evaluation, rate limiting, observability) and the React frontend are complete; Phase 6 (Docker, CI, Render Blueprint) and Phase 7 (appointments, support plan) are done; the live deployment itself has not been created yet.
 
 ## Roadmap
 
@@ -21,6 +21,7 @@
 | 4 | Background jobs (Redis, Celery), retries, idempotency | ✅ Done |
 | 5 | AI evaluation, rate limiting, observability, LLM tracing | ✅ Done |
 | 6 | Docker, CI/CD, Render deployment | ✅ Done (Blueprint ready; deploy is a manual step) |
+| 7 | Appointments (clinician-managed, read-only for clients) and "Planım" support plan with the "O an" card | ✅ Done |
 | — | React + TypeScript frontend, built alongside the backend | ✅ Done (client, clinician and clinic-admin screens) |
 
 ## What it does (planned v1)

@@ -26,7 +26,14 @@ export function ClinicianClients() {
         <ul className="grid gap-3 sm:grid-cols-2">
           {data?.map((c) => (
             <li key={c.id}>
-              <Card>{c.display_name}</Card>
+              <Card>
+                <Link to={`/clinician/clients/${c.id}`} className="font-medium text-indigo-700 hover:underline">
+                  {c.display_name}
+                </Link>
+                <p className="mt-1 text-xs text-slate-500">
+                  {c.next_appointment_at ? `Sonraki randevu: ${formatDateTime(c.next_appointment_at)}` : 'Planlı randevu yok'}
+                </p>
+              </Card>
             </li>
           ))}
         </ul>

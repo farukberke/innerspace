@@ -1,6 +1,8 @@
 import { request, tokens } from './client'
 import type {
   AfterSessionNote,
+  Appointment,
+  AppointmentInput,
   Assignment,
   ClientRead,
   CrisisInfo,
@@ -9,6 +11,9 @@ import type {
   EntryKind,
   EntryPage,
   InvitationCreated,
+  Plan,
+  PlanContent,
+  SharedPlan,
   SharedSummary,
   Summary,
   SummaryJob,
@@ -53,10 +58,14 @@ export const summariesApi = {
   approve: (id: string) => request<Summary>(`/summaries/${id}/approve`, { method: 'POST' }),
   share: (id: string) => request<Summary>(`/summaries/${id}/share`, { method: 'POST' }),
   unshare: (id: string) => request<Summary>(`/summaries/${id}/unshare`, { method: 'POST' }),
-  generate: (period_start: string, period_end: string, idempotencyKey: string) =>
+  /** With `appointment_id` and no dates the backend uses previous appointment -> this one. */
+  generate: (
+    body: { period_start?: string; period_end?: string; appointment_id?: string },
+    idempotencyKey: string,
+  ) =>
     request<SummaryJob>('/summaries/generate', {
       method: 'POST',
-      body: { period_start, period_end },
+      body,
       headers: { 'Idempotency-Key': idempotencyKey },
     }),
   job: (id: string) => request<SummaryJob>(`/summaries/jobs/${id}`),
@@ -73,6 +82,26 @@ export const clinicianApi = {
   clients: () => request<ClientRead[]>('/clinician/clients'),
   summaries: () => request<SummaryListItem[]>('/clinician/summaries'),
   summary: (id: string) => request<SharedSummary>(`/clinician/summaries/${id}`),
+  appointments: (clientId: string) => request<Appointment[]>(`/clinician/clients/${clientId}/appointments`),
+  createAppointment: (clientId: string, body: AppointmentInput) =>
+    request<Appointment>(`/clinician/clients/${clientId}/appointments`, { method: 'POST', body }),
+  updateAppointment: (id: string, body: Partial<AppointmentInput>) =>
+    request<Appointment>(`/clinician/appointments/${id}`, { method: 'PATCH', body }),
+  deleteAppointment: (id: string) => request<void>(`/clinician/appointments/${id}`, { method: 'DELETE' }),
+  /** 404 = the client has not shared their plan (or it was withdrawn). */
+  plan: (clientId: string) => request<SharedPlan>(`/clinician/clients/${clientId}/plan`),
+}
+
+export const appointmentsApi = {
+  /** Read-only for clients: appointments are managed by the assigned clinician. */
+  list: () => request<Appointment[]>('/appointments'),
+}
+
+export const planApi = {
+  get: () => request<Plan>('/plan'),
+  save: (body: PlanContent) => request<Plan>('/plan', { method: 'PUT', body }),
+  share: () => request<Plan>('/plan/share', { method: 'POST' }),
+  unshare: () => request<Plan>('/plan/unshare', { method: 'POST' }),
 }
 
 export const invitationsApi = {

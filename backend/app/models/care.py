@@ -112,6 +112,11 @@ class Summary(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     period_end: Mapped[date | None] = mapped_column(Date)
     approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     shared_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # The appointment this summary prepares for (always one of the same client's; the
+    # services enforce that).
+    appointment_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("appointments.id", ondelete="SET NULL")
+    )
 
     statements: Mapped[list["SummaryStatement"]] = relationship(
         order_by="SummaryStatement.position",
@@ -172,6 +177,9 @@ class SummaryJob(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
     error_code: Mapped[str | None] = mapped_column(String(64))
     attempts: Mapped[int] = mapped_column(default=0)
+    appointment_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("appointments.id", ondelete="SET NULL")
+    )
     idempotency_key: Mapped[str | None] = mapped_column(String(128))
 
 
@@ -264,3 +272,28 @@ class AuditLog(UUIDPrimaryKeyMixin, Base):
     target_id: Mapped[uuid.UUID | None]
     detail: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class SupportPlan(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """The client's own support plan ("Planım"): one per client, written by the client. Private
+    until the client shares it read-only with the assigned clinician (`shared_at`)."""
+
+    __tablename__ = "support_plans"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["client_id", "organization_id"],
+            ["users.id", "users.organization_id"],
+            ondelete="CASCADE",
+        ),
+        UniqueConstraint("client_id", name="uq_support_plans_client_id"),
+    )
+
+    organization_id: Mapped[uuid.UUID]
+    client_id: Mapped[uuid.UUID]
+    moment_steps: Mapped[list[str]] = mapped_column(JSONB, default=list)
+    self_note: Mapped[str] = mapped_column(String(500), default="")
+    contacts: Mapped[list[dict[str, str]]] = mapped_column(JSONB, default=list)
+    warning_signs: Mapped[list[str]] = mapped_column(JSONB, default=list)
+    coping_strategies: Mapped[list[str]] = mapped_column(JSONB, default=list)
+    talk_to_clinician: Mapped[list[str]] = mapped_column(JSONB, default=list)
+    shared_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

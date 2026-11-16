@@ -5,6 +5,7 @@ from typing import Annotated, Self
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
 
 from app.models import Summary, SummaryJobStatus, SummaryStatus, UserRole
+from app.schemas.planning import PlanContact
 
 MAX_PERIOD_DAYS = 92
 
@@ -47,6 +48,8 @@ class ClientRead(BaseModel):
 
     id: uuid.UUID
     display_name: str
+    # The client's next clinic appointment with the requesting clinician (list endpoint only).
+    next_appointment_at: datetime | None = None
 
 
 class InvitationCreate(BaseModel):
@@ -90,13 +93,22 @@ class AssignmentRead(BaseModel):
 
 
 class SummaryGenerate(BaseModel):
-    """Period (inclusive dates, UTC) whose entries the summary is based on."""
+    """Period (inclusive dates, UTC) whose entries the summary is based on. With an
+    `appointment_id` the period may be omitted: it then runs from the client's previous
+    appointment to that one."""
 
-    period_start: date
-    period_end: date
+    period_start: date | None = None
+    period_end: date | None = None
+    appointment_id: uuid.UUID | None = None
 
     @model_validator(mode="after")
     def _check_period(self) -> Self:
+        if self.period_start is None and self.period_end is None:
+            if self.appointment_id is None:
+                raise ValueError("period_start and period_end (or appointment_id) are required")
+            return self
+        if self.period_start is None or self.period_end is None:
+            raise ValueError("period_start and period_end must be given together")
         if self.period_end < self.period_start:
             raise ValueError("period_end must not be before period_start")
         if (self.period_end - self.period_start).days > MAX_PERIOD_DAYS:
@@ -140,6 +152,7 @@ class SummaryRead(BaseModel):
     approved_at: datetime | None
     shared_at: datetime | None
     created_at: datetime
+    appointment_id: uuid.UUID | None = None
 
     @classmethod
     def from_model(cls, summary: Summary) -> Self:
@@ -163,6 +176,7 @@ class SummaryRead(BaseModel):
             approved_at=summary.approved_at,
             shared_at=summary.shared_at,
             created_at=summary.created_at,
+            appointment_id=summary.appointment_id,
         )
 
 
@@ -190,6 +204,8 @@ class CrisisResponse(BaseModel):
     crisis: bool = True
     message: str
     resources: list[dict[str, str]]
+    # The client's own "Planım" contacts (only theirs); the fixed message above never changes.
+    contacts: list[PlanContact] = []
 
 
 class AfterSessionCreate(BaseModel):
@@ -216,6 +232,7 @@ class SummaryJobRead(BaseModel):
     period_start: date
     period_end: date
     summary_id: uuid.UUID | None
+    appointment_id: uuid.UUID | None = None
     error_code: str | None
     attempts: int
     created_at: datetime

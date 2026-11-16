@@ -5,7 +5,18 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api import admin, ai, auth, entries, health, invitations, metrics, summaries
+from app.api import (
+    admin,
+    ai,
+    appointments,
+    auth,
+    entries,
+    health,
+    invitations,
+    metrics,
+    plans,
+    summaries,
+)
 from app.core.config import Settings, get_settings
 from app.core.db import create_engine, create_sessionmaker
 from app.core.logging import configure_logging
@@ -67,7 +78,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.add_middleware(
             CORSMiddleware,
             allow_origins=settings.cors_origin_list,
-            allow_methods=["GET", "POST", "PATCH", "DELETE"],
+            allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
             allow_headers=["Authorization", "Content-Type", "Idempotency-Key", "X-Request-ID"],
             expose_headers=["Retry-After", "X-Request-ID"],
         )
@@ -79,4 +90,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(entries.router, prefix=API_PREFIX)
     app.include_router(summaries.router, prefix=API_PREFIX)
     app.include_router(ai.router, prefix=API_PREFIX)
+    app.include_router(appointments.router, prefix=API_PREFIX)
+    app.include_router(plans.router, prefix=API_PREFIX)
     return app

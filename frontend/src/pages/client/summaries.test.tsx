@@ -86,14 +86,22 @@ describe('job polling', () => {
 
 describe('crisis screen', () => {
   it('shows the backend message and resources', () => {
-    render(<CrisisScreen crisis={CRISIS} />)
+    render(
+      <MemoryRouter>
+        <CrisisScreen crisis={CRISIS} />
+      </MemoryRouter>,
+    )
     expect(screen.getByRole('alert')).toHaveTextContent('Sabit kriz mesajı')
     expect(screen.getByText('Acil Çağrı Merkezi')).toBeInTheDocument()
   })
 
   it('is shown for an after-session note answered with the crisis response', async () => {
     mockFetch({ 'GET /after-session-notes': { body: [] }, 'POST /after-session-notes': { body: CRISIS } })
-    render(<AfterSession />)
+    render(
+      <MemoryRouter>
+        <AfterSession />
+      </MemoryRouter>,
+    )
     const u = userEvent.setup()
     await u.type(await screen.findByLabelText(/Seans nasıldı/), 'bir not')
     await u.click(screen.getByRole('button', { name: /Notu düzenle/ }))
@@ -113,6 +121,7 @@ const draft: Summary = {
   approved_at: null,
   shared_at: null,
   created_at: '2026-11-15T10:00:00Z',
+  appointment_id: null,
 }
 
 function renderDetail() {

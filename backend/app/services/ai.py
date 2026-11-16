@@ -115,6 +115,7 @@ async def generate_summary(
         period_start=start,
         period_end=end,
         statements=statements,
+        appointment_id=job.appointment_id if job is not None else None,
     )
     session.add(summary)
     await session.flush()

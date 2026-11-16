@@ -1,4 +1,6 @@
+import { Link } from 'react-router-dom'
 import type { CrisisInfo } from '../api/types'
+import { telHref } from '../pages/client/Moment'
 
 /** Fixed, calm screen shown when the backend reports crisis language. Text comes from the backend. */
 export function CrisisScreen({ crisis, onClose }: { crisis: CrisisInfo; onClose?: () => void }) {
@@ -22,6 +24,26 @@ export function CrisisScreen({ crisis, onClose }: { crisis: CrisisInfo; onClose?
           ))}
         </ul>
       )}
+      {crisis.contacts && crisis.contacts.length > 0 && (
+        <div className="mt-5">
+          <h3 className="text-sm font-semibold">Planındaki kişiler</h3>
+          <ul className="mt-2 space-y-2">
+            {crisis.contacts.map((c, i) => (
+              <li key={i}>
+                <a href={telHref(c.phone)} className="flex flex-wrap items-baseline justify-between gap-2 rounded-lg bg-white px-4 py-3 hover:bg-amber-100">
+                  <span className="text-sm">{c.name}</span>
+                  <span className="text-lg font-semibold">{c.phone}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      <p className="mt-4 text-sm">
+        <Link to="/client/moment" className="font-medium underline">
+          “O an” kartını aç
+        </Link>
+      </p>
       {onClose && (
         <button
           type="button"

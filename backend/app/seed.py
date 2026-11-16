@@ -30,6 +30,7 @@ from app.models import (
     Entry,
     EntryKind,
     Organization,
+    SupportPlan,
     User,
     UserRole,
 )
@@ -94,6 +95,32 @@ _AVOIDANCE_SITUATIONS = (
     "bir arkadaşın doğum günü yemeği",
     "bankayı telefonla aramak",
 )
+
+
+AYSE_EMAIL = "client.ayse@demo-clinic.test"
+ELIF_EMAIL = "dr.elif@demo-clinic.test"
+
+
+def _demo_plan(client: User) -> SupportPlan:
+    """A sample support plan (Turkish, fictional phone numbers)."""
+    return SupportPlan(
+        organization_id=client.organization_id,
+        client_id=client.id,
+        moment_steps=[
+            "Olduğum yerde dur, ayaklarımı yere bastığımı hisset.",
+            "4 saniye nefes al, 6 saniye ver; 5 kez tekrarla.",
+            "Etrafta gördüğüm 5 şeyi say.",
+            "Hazırsam bir kişiyi ara.",
+        ],
+        self_note="Bu his geçecek. Daha önce de geçti, yine geçecek.",
+        contacts=[
+            {"name": "Ablam (kurgusal)", "phone": "0555 000 00 01"},
+            {"name": "Yakın arkadaşım (kurgusal)", "phone": "0555 000 00 02"},
+        ],
+        warning_signs=["Uykusuz kalmak", "Göğsümde sıkışma", "İnsanlardan kaçma isteği"],
+        coping_strategies=["Kısa bir yürüyüş", "Nefes egzersizi", "Sıcak bir içecek"],
+        talk_to_clinician=["Metroda yaşadığım atak", "Uyku düzenim"],
+    )
 
 
 def _entry_payload(rng: random.Random, kind: EntryKind) -> tuple[str | None, dict[str, Any]]:
@@ -179,6 +206,8 @@ async def seed(session: AsyncSession, *, password: str, now: datetime | None = N
         clinicians = [u for u in users if u.role == UserRole.CLINICIAN]
         for client in (u for u in users if u.role == UserRole.CLIENT):
             assigned = rng.choice(clinicians)
+            if client.email == AYSE_EMAIL:  # the demo plan-sharing story needs Dr. Elif
+                assigned = next(c for c in clinicians if c.email == ELIF_EMAIL)
             session.add(
                 CareAssignment(
                     organization_id=org.id, clinician_id=assigned.id, client_id=client.id
@@ -192,6 +221,7 @@ async def seed(session: AsyncSession, *, password: str, now: datetime | None = N
                         organization_id=org.id,
                         client_id=client.id,
                         clinician_id=assigned.id,
+                        created_by_id=assigned.id,
                         kind=AppointmentKind.THERAPY,
                         scheduled_at=next_session - timedelta(days=7),
                     ),
@@ -199,11 +229,18 @@ async def seed(session: AsyncSession, *, password: str, now: datetime | None = N
                         organization_id=org.id,
                         client_id=client.id,
                         clinician_id=assigned.id,
+                        created_by_id=assigned.id,
                         kind=AppointmentKind.THERAPY,
                         scheduled_at=next_session,
                     ),
                 ]
             )
+            plan = _demo_plan(client)
+            if client.email == AYSE_EMAIL:
+                # Taken now (not `now`): sharing only counts if it is after the assignment,
+                # whose timestamp is the start of this transaction.
+                plan.shared_at = datetime.now(UTC)
+            session.add(plan)
         created.append(spec.slug)
 
     await session.commit()

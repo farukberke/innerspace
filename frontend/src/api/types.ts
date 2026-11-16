@@ -23,6 +23,7 @@ export interface User {
 export interface ClientRead {
   id: string
   display_name: string
+  next_appointment_at: string | null
 }
 
 export interface InvitationCreated {
@@ -83,6 +84,7 @@ export interface Summary {
   approved_at: string | null
   shared_at: string | null
   created_at: string
+  appointment_id: string | null
 }
 
 export interface SummaryListItem {
@@ -103,6 +105,8 @@ export interface CrisisInfo {
   crisis: boolean
   message: string
   resources: Record<string, string>[]
+  /** The client's own Planım contacts (only theirs). */
+  contacts?: PlanContact[]
 }
 
 export interface SummaryJob {
@@ -111,6 +115,7 @@ export interface SummaryJob {
   period_start: string
   period_end: string
   summary_id: string | null
+  appointment_id?: string | null
   error_code: string | null
   attempts: number
   created_at: string
@@ -124,4 +129,44 @@ export interface AfterSessionNote {
   to_try: string[]
   questions: string[]
   created_at: string
+}
+
+export type AppointmentKind = 'therapy' | 'psychiatry'
+
+export interface Appointment {
+  id: string
+  client_id: string
+  clinician_id: string | null
+  clinician_name: string | null
+  kind: AppointmentKind
+  scheduled_at: string
+}
+
+export interface AppointmentInput {
+  kind: AppointmentKind
+  scheduled_at: string
+}
+
+export interface PlanContact {
+  name: string
+  phone: string
+}
+
+export interface PlanContent {
+  moment_steps: string[]
+  self_note: string
+  contacts: PlanContact[]
+  warning_signs: string[]
+  coping_strategies: string[]
+  talk_to_clinician: string[]
+}
+
+export interface Plan extends PlanContent {
+  shared_at: string | null
+  updated_at: string | null
+}
+
+export interface SharedPlan extends PlanContent {
+  shared_at: string
+  updated_at: string
 }

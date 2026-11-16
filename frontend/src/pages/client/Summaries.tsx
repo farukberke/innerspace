@@ -1,9 +1,9 @@
 import { useCallback, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { errorMessage } from '../../api/client'
-import { summariesApi } from '../../api/endpoints'
+import { appointmentsApi, summariesApi } from '../../api/endpoints'
 import type { SummaryJob, SummaryStatus } from '../../api/types'
-import { Alert, Badge, Button, Card, Empty, formatDate, PageHeader, Spinner, TextField } from '../../components/ui'
+import { Alert, Badge, Button, Card, Empty, formatDate, formatDateTime, PageHeader, SelectField, Spinner, TextField } from '../../components/ui'
 import { useLoad } from '../../hooks/useLoad'
 import { JobProgress } from './JobProgress'
 
@@ -26,6 +26,9 @@ function GeneratePanel({ onFinished }: { onFinished: () => void }) {
   const today = new Date()
   const [start, setStart] = useState(iso(new Date(today.getTime() - 14 * 86400000)))
   const [end, setEnd] = useState(iso(today))
+  const [appointmentId, setAppointmentId] = useState('')
+  // Optional: the appointments to prepare for. A failed load just leaves the dates-only form.
+  const { data: appointments } = useLoad(useCallback(() => appointmentsApi.list(), []))
   const [job, setJob] = useState<SummaryJob | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -37,7 +40,9 @@ function GeneratePanel({ onFinished }: { onFinished: () => void }) {
     setBusy(true)
     setError(null)
     try {
-      setJob(await summariesApi.generate(start, end, key))
+      setJob(
+        await summariesApi.generate(appointmentId ? { appointment_id: appointmentId } : { period_start: start, period_end: end }, key),
+      )
     } catch (err) {
       setError(errorMessage(err))
     } finally {
@@ -56,10 +61,24 @@ function GeneratePanel({ onFinished }: { onFinished: () => void }) {
   return (
     <form onSubmit={submit} className="space-y-4" aria-label="Özet oluştur">
       {error && <Alert>{error}</Alert>}
-      <div className="grid gap-4 sm:grid-cols-2">
-        <TextField label="Başlangıç tarihi" type="date" required value={start} max={end} onChange={(e) => setStart(e.target.value)} />
-        <TextField label="Bitiş tarihi" type="date" required value={end} min={start} onChange={(e) => setEnd(e.target.value)} />
-      </div>
+      {appointments && appointments.length > 0 && (
+        <SelectField label="Hangi randevu için? (isteğe bağlı)" value={appointmentId} onChange={(e) => setAppointmentId(e.target.value)}>
+          <option value="">Randevu seçme, tarih aralığı gireceğim</option>
+          {appointments.map((a) => (
+            <option key={a.id} value={a.id}>
+              {formatDateTime(a.scheduled_at)}
+            </option>
+          ))}
+        </SelectField>
+      )}
+      {appointmentId ? (
+        <p className="text-sm text-slate-600">Dönem, bir önceki randevundan seçtiğin randevuya kadar otomatik belirlenir.</p>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <TextField label="Başlangıç tarihi" type="date" required value={start} max={end} onChange={(e) => setStart(e.target.value)} />
+          <TextField label="Bitiş tarihi" type="date" required value={end} min={start} onChange={(e) => setEnd(e.target.value)} />
+        </div>
+      )}
       <p className="text-xs text-slate-500">En fazla 92 günlük bir aralık seçebilirsin. Özet yalnızca sana görünen bir taslak olarak oluşturulur.</p>
       <Button type="submit" disabled={busy}>
         {busy ? 'Gönderiliyor…' : 'Özet taslağı oluştur'}
