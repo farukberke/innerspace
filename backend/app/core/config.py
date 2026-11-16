@@ -2,10 +2,11 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field, SecretStr
+from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
+_PLACEHOLDER_MARKERS = ("replace-with", "change-me", "changeme", "your-secret", "example")
 
 
 class Settings(BaseSettings):
@@ -27,6 +28,14 @@ class Settings(BaseSettings):
     refresh_token_days: int = Field(default=7, ge=1)
     invitation_hours: int = Field(default=72, ge=1)
     seed_password: SecretStr | None = None  # demo seed only
+
+    @field_validator("jwt_secret")
+    @classmethod
+    def _reject_placeholder_secret(cls, value: SecretStr) -> SecretStr:
+        lowered = value.get_secret_value().lower()
+        if any(marker in lowered for marker in _PLACEHOLDER_MARKERS):
+            raise ValueError("JWT_SECRET is a placeholder; generate a random value")
+        return value
 
     @property
     def is_production(self) -> bool:

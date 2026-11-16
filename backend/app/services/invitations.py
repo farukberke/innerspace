@@ -2,6 +2,7 @@ import uuid
 from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings
@@ -98,6 +99,17 @@ async def accept_invitation(
         raise InvalidInvitationError
     if await session.scalar(select(User.id).where(User.email == invitation.email)):
         raise InvalidInvitationError
+    # The people who vouched for this invitation must still be active.
+    sponsor_ids = [invitation.invited_by_id]
+    if invitation.assign_clinician_id is not None:
+        sponsor_ids.append(invitation.assign_clinician_id)
+    active = set(
+        await session.scalars(
+            select(User.id).where(User.id.in_(sponsor_ids), User.is_active.is_(True))
+        )
+    )
+    if active != set(sponsor_ids):
+        raise InvalidInvitationError
 
     user = User(
         organization_id=invitation.organization_id,
@@ -107,16 +119,21 @@ async def accept_invitation(
         password_hash=await hash_password(password),
     )
     session.add(user)
-    await session.flush()
     invitation.used_at = now
-    if invitation.role == UserRole.CLIENT and invitation.assign_clinician_id is not None:
-        session.add(
-            CareAssignment(
-                organization_id=user.organization_id,
-                clinician_id=invitation.assign_clinician_id,
-                client_id=user.id,
+    try:
+        await session.flush()
+        if invitation.role == UserRole.CLIENT and invitation.assign_clinician_id is not None:
+            session.add(
+                CareAssignment(
+                    organization_id=user.organization_id,
+                    clinician_id=invitation.assign_clinician_id,
+                    client_id=user.id,
+                )
             )
-        )
+            await session.flush()
+    except IntegrityError:  # e.g. the e-mail was registered concurrently
+        await session.rollback()
+        raise InvalidInvitationError from None
     await audit.record(
         session,
         "invitation.accept",

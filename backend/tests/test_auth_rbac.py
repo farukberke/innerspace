@@ -3,14 +3,18 @@
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
 import jwt
 import pytest
 from httpx import AsyncClient
+from pydantic import ValidationError
 from sqlalchemy import select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings
+from app.core.db import create_engine
 from app.core.security import JWT_ALGORITHM, TokenType, create_token
 from app.models import AuditLog, CareAssignment, Invitation, Organization, User, UserRole
 from tests.conftest import TEST_JWT_SECRET, TEST_PASSWORD
@@ -145,7 +149,11 @@ PROTECTED = [
     ("GET", "/entries"),
     ("POST", "/entries"),
     ("GET", f"/entries/{uuid.uuid4()}"),
+    ("PATCH", f"/entries/{uuid.uuid4()}"),
+    ("DELETE", f"/entries/{uuid.uuid4()}"),
     ("GET", "/summaries"),
+    ("GET", f"/summaries/{uuid.uuid4()}"),
+    ("POST", f"/summaries/{uuid.uuid4()}/unshare"),
     ("POST", "/summaries"),
     ("POST", f"/summaries/{uuid.uuid4()}/share"),
     ("GET", "/clinician/clients"),
@@ -220,15 +228,19 @@ async def test_only_the_client_sees_raw_entries(http: AsyncClient, acting, w: Wo
         acting.user = viewer
         listing = await http.get(f"{API}/entries")
         detail = await http.get(f"{API}/entries/{entry_id}")
+        patch = await http.patch(f"{API}/entries/{entry_id}", json={"note": "tampered"})
+        delete = await http.delete(f"{API}/entries/{entry_id}")
         if viewer.role == UserRole.CLIENT:
             assert listing.status_code == 200 and listing.json()["total"] == 0
             assert detail.status_code == 404  # other client, also other org
+            assert patch.status_code == 404 and delete.status_code == 404
         else:
             assert listing.status_code == 403
             assert detail.status_code == 403
+            assert patch.status_code == 403 and delete.status_code == 403
         assert "private" not in listing.text + detail.text
     acting.user = w.client_a
-    assert (await http.get(f"{API}/entries/{entry_id}")).status_code == 200
+    assert (await http.get(f"{API}/entries/{entry_id}")).json()["note"] == "private"
 
 
 async def _summary(http: AsyncClient, acting, client: User) -> str:
@@ -538,3 +550,93 @@ async def test_audit_log_never_stores_email_or_passwords(
     dump = str([(r.action, r.detail) for r in await db_session.scalars(select(AuditLog))])
     for forbidden in ("secret.person", token, NEW_PASSWORD, "wrong-password-123"):
         assert forbidden not in dump
+
+
+# --- Security review fixes -------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "secret",
+    [
+        "replace-with-a-random-string-of-at-least-32-chars",
+        "change-me-" * 5,
+        "My-Example-Secret-" * 3,
+    ],
+)
+def test_placeholder_jwt_secret_is_rejected(secret: str) -> None:
+    with pytest.raises(ValidationError):
+        Settings(app_env="production", database_url="postgresql+asyncpg://x/y", jwt_secret=secret)
+
+
+def test_env_example_secret_is_rejected() -> None:
+    text = (Path(__file__).resolve().parents[2] / ".env.example").read_text(encoding="utf-8")
+    placeholder = next(
+        line.split("=", 1)[1].strip()
+        for line in text.splitlines()
+        if line.startswith("JWT_SECRET=")
+    )
+    with pytest.raises(ValidationError):
+        Settings(database_url="postgresql+asyncpg://x/y", jwt_secret=placeholder)
+
+
+def test_engine_hides_statement_parameters() -> None:
+    engine = create_engine("postgresql+asyncpg://u:p@localhost/db")
+    assert engine.sync_engine.hide_parameters is True
+
+
+async def test_integrity_errors_become_409_and_400(
+    http: AsyncClient, acting, w: World, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    acting.user = w.clin_a
+    token = (await _invite(http, email="race@org-a.test")).json()["token"]
+    acting.user = w.admin_a
+    body = {"clinician_id": str(w.clin_a2.id), "client_id": str(w.client_a2.id)}
+
+    async def _boom(self, *args, **kwargs):
+        raise IntegrityError("stmt", {}, Exception("dup"))
+
+    monkeypatch.setattr(AsyncSession, "flush", _boom)
+    assert (await http.post(f"{API}/admin/assignments", json=body)).status_code == 409
+    acting.user = None
+    assert (await _accept(http, token)).status_code == 400
+
+
+async def test_clinician_list_has_no_body_and_view_is_audited(
+    http: AsyncClient, acting, w: World, db_session: AsyncSession
+) -> None:
+    sid = await _summary(http, acting, w.client_a)
+    await http.post(f"{API}/summaries/{sid}/share")
+    acting.user = w.clin_a
+    items = (await http.get(f"{API}/clinician/summaries")).json()
+    assert [i["id"] for i in items] == [sid]
+    assert "body" not in items[0] and "Synthetic text" not in str(items)
+    assert "summary.view" not in await _audit_actions(db_session)
+    detail = await http.get(f"{API}/clinician/summaries/{sid}")
+    assert detail.json()["body"] == "Synthetic text"
+    assert "summary.view" in await _audit_actions(db_session)
+
+
+async def test_deactivated_client_summaries_hidden_from_clinician(
+    http: AsyncClient, acting, w: World, db_session: AsyncSession
+) -> None:
+    sid = await _summary(http, acting, w.client_a)
+    await http.post(f"{API}/summaries/{sid}/share")
+    w.client_a.is_active = False
+    await db_session.flush()
+    acting.user = w.clin_a
+    assert (await http.get(f"{API}/clinician/summaries/{sid}")).status_code == 404
+    assert (await http.get(f"{API}/clinician/summaries")).json() == []
+
+
+@pytest.mark.parametrize("who", ["inviter", "assigned_clinician"])
+async def test_invitation_invalid_if_sponsor_deactivated(
+    http: AsyncClient, acting, w: World, db_session: AsyncSession, who: str
+) -> None:
+    acting.user = w.admin_a
+    invite = await _invite(http, email="orphan@org-a.test", clinician_id=str(w.clin_a2.id))
+    token = invite.json()["token"]
+    (w.admin_a if who == "inviter" else w.clin_a2).is_active = False
+    await db_session.flush()
+    acting.user = None
+    assert (await _accept(http, token)).status_code == 400
+    assert await db_session.scalar(select(User).where(User.email == "orphan@org-a.test")) is None

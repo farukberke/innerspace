@@ -26,7 +26,12 @@ def _shared_with(clinician: User) -> Select[tuple[Summary]]:
             (CareAssignment.client_id == Summary.client_id)
             & (CareAssignment.organization_id == Summary.organization_id),
         )
+        .join(
+            User,
+            (User.id == Summary.client_id) & (User.organization_id == Summary.organization_id),
+        )
         .where(
+            User.is_active.is_(True),
             Summary.organization_id == clinician.organization_id,
             CareAssignment.clinician_id == clinician.id,
             Summary.shared_at.is_not(None),

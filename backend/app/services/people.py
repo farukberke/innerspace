@@ -3,6 +3,7 @@
 import uuid
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import CareAssignment, User, UserRole
@@ -71,7 +72,11 @@ async def create_assignment(
         organization_id=admin.organization_id, clinician_id=clinician_id, client_id=client_id
     )
     session.add(assignment)
-    await session.flush()
+    try:
+        await session.flush()
+    except IntegrityError:  # concurrent duplicate
+        await session.rollback()
+        raise ConflictError("Assignment already exists") from None
     await audit.record(
         session,
         "assignment.create",

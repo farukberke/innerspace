@@ -92,6 +92,18 @@ class SummaryCreate(BaseModel):
     body: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=20000)]
 
 
+class SummaryListItem(BaseModel):
+    """Metadata only: the body is returned (and audited) by the detail endpoint."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    client_id: uuid.UUID
+    title: str
+    shared_at: datetime | None
+    created_at: datetime
+
+
 class SummaryRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

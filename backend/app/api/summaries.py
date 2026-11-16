@@ -4,7 +4,7 @@ from typing import Annotated
 from fastapi import APIRouter, Body, HTTPException, status
 
 from app.api.deps import CurrentClient, CurrentClinician, SessionDep
-from app.schemas.care import ClientRead, SummaryCreate, SummaryRead
+from app.schemas.care import ClientRead, SummaryCreate, SummaryListItem, SummaryRead
 from app.services import people
 from app.services import summaries as service
 from app.services.errors import NotFoundError
@@ -76,9 +76,9 @@ async def list_clients(session: SessionDep, clinician: CurrentClinician) -> list
 @router.get("/clinician/summaries")
 async def list_shared_summaries(
     session: SessionDep, clinician: CurrentClinician
-) -> list[SummaryRead]:
+) -> list[SummaryListItem]:
     items = await service.list_shared_with(session, clinician)
-    return [SummaryRead.model_validate(s) for s in items]
+    return [SummaryListItem.model_validate(s) for s in items]
 
 
 @router.get("/clinician/summaries/{summary_id}")
