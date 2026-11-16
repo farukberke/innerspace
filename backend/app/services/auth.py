@@ -1,7 +1,7 @@
 import uuid
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import select, update
+from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings
@@ -157,3 +157,13 @@ async def logout(session: AsyncSession, settings: Settings, refresh_token: str) 
         actor_id=record.user_id,
     )
     await session.commit()
+
+
+async def purge_expired_refresh_tokens(session: AsyncSession, now: datetime | None = None) -> int:
+    """Deletes refresh tokens past their expiry (they can no longer be used or replayed).
+    Idempotent. Returns the number of deleted rows."""
+    result = await session.execute(
+        delete(RefreshToken).where(RefreshToken.expires_at < (now or datetime.now(UTC)))
+    )
+    await session.commit()
+    return result.rowcount  # type: ignore[attr-defined]

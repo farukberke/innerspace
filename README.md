@@ -8,7 +8,7 @@
 
 ## Status
 
-🚧 **Active development.** Phases 1 (backend foundation), 2 (authentication & authorization), 3 (AI summaries), 4 (background jobs), 5 (evaluation, rate limiting, observability) and the React frontend are complete; Phase 6 is next.
+🚧 **Active development.** Phases 1 (backend foundation), 2 (authentication & authorization), 3 (AI summaries), 4 (background jobs), 5 (evaluation, rate limiting, observability) and the React frontend are complete; Phase 6 (Docker, CI, Render Blueprint) is done; the live deployment itself has not been created yet.
 
 ## Roadmap
 
@@ -20,7 +20,7 @@
 | 3 | AI summaries: structured output, citations, guardrails, human-in-the-loop sharing | ✅ Done |
 | 4 | Background jobs (Redis, Celery), retries, idempotency | ✅ Done |
 | 5 | AI evaluation, rate limiting, observability, LLM tracing | ✅ Done |
-| 6 | Docker, CI/CD, Render deployment | ⏭ Next |
+| 6 | Docker, CI/CD, Render deployment | ✅ Done (Blueprint ready; deploy is a manual step) |
 | — | React + TypeScript frontend, built alongside the backend | ✅ Done (client, clinician and clinic-admin screens) |
 
 ## What it does (planned v1)
@@ -49,7 +49,7 @@
 **Backend:** Python, FastAPI, Pydantic, SQLAlchemy, Alembic, PostgreSQL
 **AI:** Pydantic AI, structured outputs, tool calling, guardrails, evaluation
 **Frontend:** React, TypeScript, Tailwind CSS
-**Ops:** Docker, GitHub Actions, AWS
+**Ops:** Docker, GitHub Actions, Render
 **Tooling:** uv, ruff, pytest, pre-commit, gitleaks
 
 ## Development setup
@@ -58,7 +58,7 @@ Requirements: [uv](https://docs.astral.sh/uv/), Docker, Git.
 
 ```bash
 cp .env.example .env          # then set your own local POSTGRES_PASSWORD / DATABASE_URL
-docker compose up -d          # PostgreSQL on localhost:5433 (+ a separate test database)
+docker compose up -d db redis # PostgreSQL on localhost:5433 (+ a separate test database), Redis on 6380
 cd backend
 uv sync                       # installs Python 3.13 and dependencies
 uv run pre-commit install     # secret scanning and lint checks before each commit
@@ -71,6 +71,60 @@ uv run pytest                 # runs against the `<db>_test` database
 API docs: http://localhost:8000/docs (disabled in production). Health: `/health` (liveness), `/health/ready` (database).
 
 > Authentication: `POST /api/v1/auth/login` returns short-lived access + refresh JWTs (`Authorization: Bearer ...`). There is no open sign-up: accounts are created from invitations (`POST /api/v1/invitations`, token returned in the response until e-mail delivery exists). `JWT_SECRET` is required (see `.env.example`). `python -m app.seed` prints a random password for the demo users unless `SEED_PASSWORD` is set.
+
+Full stack in containers (db, redis, api with migrations, worker + beat): `docker compose up --build`, then http://localhost:8000/health. Non-root image with a liveness `HEALTHCHECK`; the worker uses the same image with another command.
+
+### CI
+
+`.github/workflows/ci.yml` runs on every push/PR: backend (Postgres + Redis services, `uv sync --frozen`, `alembic upgrade head`, `pytest`, `ruff`, `pip-audit`), frontend (`npm ci`, lint, tests, build, `npm audit --omit=dev --audit-level=high`) and a Docker image build.
+
+### Deploying to Render
+
+`render.yaml` is a Blueprint: static site (frontend, SPA rewrite), API web service (Docker, `/health` check, `alembic upgrade head` as pre-deploy command), Celery worker + beat (stale-job reaper, expired refresh-token cleanup), Key Value (Redis, free) and PostgreSQL (`basic-256mb`, paid). Everything is in region `frankfurt`. Creating the Blueprint **incurs charges** (API, worker, database); check current plans/prices first.
+
+1. Push the repo to GitHub; Render dashboard: **New -> Blueprint**, select the repo.
+2. Enter the `sync: false` values when asked (table below). `DATABASE_URL` / `CELERY_BROKER_URL` are wired automatically; `postgres://` URLs are normalized to the asyncpg driver by the app. `JWT_SECRET` is generated.
+3. Circular URLs: the frontend needs the API URL and the API needs the frontend origin. After the first sync, copy both public URLs and set `VITE_API_URL` (static site; then redeploy it, it is baked at build time) and `CORS_ORIGINS` (API).
+4. Verify the production readiness list below.
+
+| Variable | Service | Notes |
+|---|---|---|
+| `ANTHROPIC_API_KEY` | api, worker | without it AI endpoints answer 503 |
+| `CORS_ORIGINS` | api | frontend origin, no wildcard, no trailing slash |
+| `VITE_API_URL` | web | public API URL, `https://...` |
+| `METRICS_TOKEN` | api | optional; `/metrics` is 404 without it |
+| `LOGFIRE_TOKEN` | api, worker | optional; tracing is a no-op without it |
+| `SEED_PASSWORD`, `SEED_DEMO=1` | api (temporary) | only for the demo seed, see below |
+
+### Demo accounts
+
+Public sign-up stays closed. To load the synthetic demo clinics once, open a Shell on the API service (or add the two variables and a one-off job) and run:
+
+```bash
+SEED_DEMO=1 SEED_PASSWORD='<choose 12+ chars>' python -m app.seed
+```
+
+It refuses to run in production without both values, is idempotent (existing organizations are skipped) and writes only fictional data. The password is never in the repo or printed. All demo users share it:
+
+| Role | Login |
+|---|---|
+| Clinic admin | `admin@demo-clinic.test` |
+| Clinician | `dr.elif@demo-clinic.test`, `dr.mert@demo-clinic.test` |
+| Client | `client.ayse@demo-clinic.test`, `client.can@demo-clinic.test`, `client.zeynep@demo-clinic.test` |
+
+Live demo: _link will be added after the first deploy_ (`https://<your-web>.onrender.com`). The login screen shows the synthetic-data warning.
+
+### Production readiness checklist
+
+- [ ] HTTPS only (Render terminates TLS; the static site and API URLs are `https://`).
+- [ ] `/docs`, `/redoc` and `/openapi.json` are disabled (`APP_ENV=production`): check they return 404.
+- [ ] `CORS_ORIGINS` lists only the frontend origin.
+- [ ] Rate limiting runs on Redis (`RATE_LIMIT_BACKEND=redis`; the app refuses to start with `memory`); login returns 503 rather than skipping limits if Redis is down.
+- [ ] `TRUSTED_PROXY_HOPS=1` verified: the app sees exactly one proxy hop, and the rightmost `X-Forwarded-For` entry is the real client IP (two different clients must not share a rate-limit bucket).
+- [ ] LLM spend limit: per-user caps (`LLM_DAILY_REQUEST_LIMIT`, `LLM_DAILY_COST_LIMIT_USD`) plus a monthly spend limit set in the Anthropic console.
+- [ ] `METRICS_TOKEN` set (or `/metrics` left unset = 404) and never in a URL.
+- [ ] `SEED_DEMO` / `SEED_PASSWORD` removed after seeding; `JWT_SECRET` not shared with anything else.
+- [ ] Worker logs show `celery ... ready` and beat started; `/health/ready` is 200.
 
 ### Evaluation, rate limiting and observability (Phase 5)
 

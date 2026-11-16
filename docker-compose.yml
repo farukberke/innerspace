@@ -1,4 +1,5 @@
-# Local development services. Usage (from repo root):  docker compose up -d
+# Local full stack (db, redis, api, worker+beat):  docker compose up --build
+# Only the databases for `uv run` development:  docker compose up -d db redis
 services:
   db:
     image: postgres:17-alpine
@@ -28,26 +29,41 @@ services:
       timeout: 3s
       retries: 10
 
-  # Background jobs (AI summary generation) + the embedded scheduler (--beat) that recovers
-  # stale `running` jobs. Same image as the API, different command.
-  worker:
+  # API. Applies migrations on start, then serves on http://localhost:8000.
+  api:
     build: ./backend
-    command: ["celery", "-A", "app.worker", "worker", "--loglevel=INFO", "--concurrency=2", "--beat"]
-    environment:
+    command: ["sh", "-c", "alembic upgrade head && exec uvicorn app.main:create_app --factory --host 0.0.0.0 --port 8000 --no-proxy-headers"]
+    environment: &app-env
       APP_ENV: ${APP_ENV:-development}
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-innerspace}
       CELERY_BROKER_URL: redis://redis:6379/0
       JWT_SECRET: ${JWT_SECRET:?set in .env}
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       LLM_MODEL: ${LLM_MODEL:-anthropic:claude-sonnet-5-5}
       LOGFIRE_TOKEN: ${LOGFIRE_TOKEN:-}
       JOB_STALE_AFTER_SECONDS: ${JOB_STALE_AFTER_SECONDS:-900}
+    ports:
+      - "127.0.0.1:${API_PORT:-8000}:8000"
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
-    profiles: ["worker"]
+
+  # Background jobs (AI summary generation) + the embedded scheduler (--beat): stale-job
+  # reaper and expired refresh-token cleanup. Same image as the API, different command.
+  worker:
+    build: ./backend
+    command: ["celery", "-A", "app.worker", "worker", "--loglevel=INFO", "--concurrency=2", "--beat", "--schedule=/tmp/celerybeat-schedule"]
+    environment: *app-env
+    healthcheck:
+      disable: true
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
 volumes:
   db_data:

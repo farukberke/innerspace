@@ -1,6 +1,7 @@
 """Synthetic demo data. Everything here is fictional — no real people or health data.
 
 Usage (from `backend/`):  uv run python -m app.seed
+Production (demo deployment): SEED_DEMO=1 SEED_PASSWORD=<12+ chars> python -m app.seed
 Idempotent: organizations that already exist (by slug) are skipped.
 """
 
@@ -14,7 +15,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import get_settings
+from app.core.config import Settings, get_settings
 from app.core.db import create_engine, create_sessionmaker
 from app.core.security import hash_password
 from app.models import (
@@ -194,10 +195,19 @@ async def seed(session: AsyncSession, *, password: str, now: datetime | None = N
     return created
 
 
+def ensure_seed_allowed(settings: Settings) -> None:
+    """Production seeding needs SEED_DEMO=1 and an explicit SEED_PASSWORD (never printed)."""
+    if not settings.is_production:
+        return
+    if not settings.seed_demo:
+        raise SystemExit("Refusing to seed demo data in production (set SEED_DEMO=1 to allow).")
+    if settings.seed_password is None or len(settings.seed_password.get_secret_value()) < 12:
+        raise SystemExit("SEED_DEMO in production requires SEED_PASSWORD (at least 12 characters).")
+
+
 async def main() -> None:
     settings = get_settings()
-    if settings.is_production:
-        raise SystemExit("Refusing to seed demo data in production.")
+    ensure_seed_allowed(settings)
     password = (
         settings.seed_password.get_secret_value()
         if settings.seed_password

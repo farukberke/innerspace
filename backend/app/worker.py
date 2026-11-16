@@ -19,7 +19,7 @@ from app.core.db import create_engine, create_sessionmaker
 from app.core.logging import configure_logging, request_id_var
 from app.core.middleware import new_request_id
 from app.core.tracing import configure_tracing
-from app.services import jobs
+from app.services import auth, jobs
 
 _settings = get_settings()
 configure_logging(_settings.log_level)
@@ -37,7 +37,11 @@ celery_app.conf.update(
         "reap-stale-summary-jobs": {
             "task": "summary_jobs.reap_stale",
             "schedule": float(_settings.job_reaper_interval_seconds),
-        }
+        },
+        "purge-expired-refresh-tokens": {
+            "task": "auth.purge_expired_refresh_tokens",
+            "schedule": float(_settings.refresh_purge_interval_seconds),
+        },
     },
 )
 
@@ -101,6 +105,21 @@ async def _reap(settings: Settings) -> list[uuid.UUID]:
 def reap_stale_jobs() -> None:
     for job_id in asyncio.run(_reap(_settings)):
         enqueue_summary_job(job_id)
+
+
+async def _purge_refresh_tokens(settings: Settings) -> int:
+    engine = create_engine(settings)
+    try:
+        async with create_sessionmaker(engine)() as session:
+            return await auth.purge_expired_refresh_tokens(session)
+    finally:
+        await engine.dispose()
+
+
+@celery_app.task(name="auth.purge_expired_refresh_tokens", ignore_result=True)
+def purge_expired_refresh_tokens() -> None:
+    deleted = asyncio.run(_purge_refresh_tokens(_settings))
+    logger.info("refresh_tokens_purged", extra={"deleted": deleted})
 
 
 def enqueue_summary_job(job_id: uuid.UUID) -> None:

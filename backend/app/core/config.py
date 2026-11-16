@@ -9,6 +9,14 @@ _REPO_ROOT = Path(__file__).resolve().parents[3]
 _PLACEHOLDER_MARKERS = ("replace-with", "change-me", "changeme", "your-secret", "example")
 
 
+def normalize_database_url(url: str) -> str:
+    """Forces the asyncpg driver prefix on plain `postgres://` / `postgresql://` URLs."""
+    for prefix in ("postgres://", "postgresql://"):
+        if url.startswith(prefix):
+            return "postgresql+asyncpg://" + url[len(prefix) :]
+    return url
+
+
 class Settings(BaseSettings):
     """Application configuration, read from environment variables and the repo-root `.env`."""
 
@@ -30,6 +38,8 @@ class Settings(BaseSettings):
     session_max_days: int = Field(default=30, ge=1)
     invitation_hours: int = Field(default=72, ge=1)
     seed_password: SecretStr | None = None  # demo seed only
+    # Explicit opt-in to run the (synthetic) demo seed with APP_ENV=production.
+    seed_demo: bool = False
 
     # AI. Without an API key the AI endpoints answer 503. The key only ever comes from the env.
     llm_model: str = "anthropic:claude-sonnet-5-5"  # "<provider>:<model>"; only anthropic for now
@@ -73,6 +83,7 @@ class Settings(BaseSettings):
     # Stale `running` job reaper (the worker died mid-job). Keep well above the LLM timeout.
     job_stale_after_seconds: int = Field(default=900, ge=60)
     job_reaper_interval_seconds: int = Field(default=60, ge=5)
+    refresh_purge_interval_seconds: int = Field(default=3600, ge=60)
 
     # CORS for a separately served frontend: comma-separated origins. Empty = CORS off.
     # A wildcard is rejected.
@@ -99,6 +110,12 @@ class Settings(BaseSettings):
 
         parse_limit(value)
         return value
+
+    @field_validator("database_url")
+    @classmethod
+    def _asyncpg_driver(cls, value: str) -> str:
+        # Managed Postgres (Render) hands out `postgresql://` / `postgres://` URLs.
+        return normalize_database_url(value)
 
     @field_validator("jwt_secret")
     @classmethod

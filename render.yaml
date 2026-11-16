@@ -1,0 +1,104 @@
+# Render Blueprint (New -> Blueprint). Secrets are never stored here: `sync: false` values are
+# asked for in the dashboard on first sync. See README "Deploying to Render".
+# Every resource uses the same region (required for private networking).
+services:
+  # --- Frontend (static site) ---
+  - type: web
+    name: innerspace-web
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL # public API URL, e.g. https://innerspace-api.onrender.com (build time)
+        sync: false
+
+  # --- API ---
+  - type: web
+    name: innerspace-api
+    runtime: docker
+    region: frankfurt
+    plan: starter
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /health
+    preDeployCommand: alembic upgrade head
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: PORT # the Dockerfile CMD listens on 8000
+        value: "8000"
+      - key: TRUSTED_PROXY_HOPS # Render puts exactly one proxy in front; verify after deploy
+        value: "1"
+      - key: RATE_LIMIT_BACKEND
+        value: redis
+      - key: DATABASE_URL
+        fromDatabase:
+          name: innerspace-db
+          property: connectionString
+      - key: CELERY_BROKER_URL
+        fromService:
+          type: keyvalue
+          name: innerspace-redis
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGINS # the frontend origin, e.g. https://innerspace-web.onrender.com
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: METRICS_TOKEN
+        sync: false
+      - key: LOGFIRE_TOKEN
+        sync: false
+
+  # --- Worker: Celery + embedded beat (stale-job reaper, refresh-token cleanup) ---
+  - type: worker
+    name: innerspace-worker
+    runtime: docker
+    region: frankfurt
+    plan: starter
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    dockerCommand: celery -A app.worker worker --loglevel=INFO --concurrency=2 --beat --schedule=/tmp/celerybeat-schedule
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: TRUSTED_PROXY_HOPS
+        value: "1"
+      - key: RATE_LIMIT_BACKEND
+        value: redis
+      - key: DATABASE_URL
+        fromDatabase:
+          name: innerspace-db
+          property: connectionString
+      - key: CELERY_BROKER_URL
+        fromService:
+          type: keyvalue
+          name: innerspace-redis
+          property: connectionString
+      - key: JWT_SECRET # settings validation only; the worker never issues or verifies tokens
+        generateValue: true
+      - key: ANTHROPIC_API_KEY # same value as the API
+        sync: false
+      - key: LOGFIRE_TOKEN
+        sync: false
+
+  # --- Redis-compatible Key Value (rate limits + Celery broker), internal access only ---
+  - type: keyvalue
+    name: innerspace-redis
+    region: frankfurt
+    plan: free
+    maxmemoryPolicy: noeviction
+    ipAllowList: []
+
+databases:
+  - name: innerspace-db
+    region: frankfurt
+    plan: basic-256mb
+    databaseName: innerspace
+    user: innerspace
