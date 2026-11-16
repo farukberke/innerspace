@@ -8,15 +8,15 @@
 
 ## Status
 
-🚧 **Active development.** Phase 0 (project setup) is complete; Phase 1 (backend foundation) is next.
+🚧 **Active development.** Phase 1 (backend foundation) is complete; Phase 2 (authentication & authorization) is next.
 
 ## Roadmap
 
 | Phase | Scope | Status |
 |---|---|---|
 | 0 | Repository, tooling, secret scanning | ✅ Done |
-| 1 | FastAPI app, PostgreSQL, SQLAlchemy models, Alembic, basic CRUD | ⏭ Next |
-| 2 | JWT auth, roles, RBAC, organization-level isolation, authorization tests | |
+| 1 | FastAPI app, PostgreSQL, SQLAlchemy models, Alembic, entry CRUD, structured logging | ✅ Done |
+| 2 | JWT auth, roles, RBAC, organization-level isolation, authorization tests | ⏭ Next |
 | 3 | AI summaries: structured output, citations, guardrails, human-in-the-loop sharing | |
 | 4 | Background jobs (Redis, Celery), retries, idempotency | |
 | 5 | AI evaluation, rate limiting, observability, LLM tracing | |
@@ -54,15 +54,37 @@
 
 ## Development setup
 
-Requirements: [uv](https://docs.astral.sh/uv/), Git.
+Requirements: [uv](https://docs.astral.sh/uv/), Docker, Git.
 
 ```bash
+cp .env.example .env          # then set your own local POSTGRES_PASSWORD / DATABASE_URL
+docker compose up -d          # PostgreSQL on localhost:5433 (+ a separate test database)
 cd backend
 uv sync                       # installs Python 3.13 and dependencies
-uv run pre-commit install     # enables secret scanning and lint checks before each commit
+uv run pre-commit install     # secret scanning and lint checks before each commit
+uv run alembic upgrade head   # apply migrations
+uv run python -m app.seed     # synthetic demo clinics, users, entries, appointments
+uv run uvicorn app.main:create_app --factory --reload
+uv run pytest                 # runs against the `<db>_test` database
 ```
 
-Copy `.env.example` to `.env` for local configuration. Never commit `.env`.
+API docs: http://localhost:8000/docs (disabled in production). Health: `/health` (liveness), `/health/ready` (database).
+
+> Phase 1 has no authentication yet: requests act as the seeded user in `DEV_USER_EMAIL`. This is disabled in production and replaced by JWT authentication in Phase 2.
+
+### Backend layout
+
+```
+backend/app/
+  api/        HTTP routes and dependencies (session, current user)
+  core/       settings, database, JSON logging, request-ID middleware
+  models/     SQLAlchemy models: Organization, User, Entry, Appointment
+  schemas/    Pydantic request/response models (per-kind entry details)
+  services/   business logic, every query scoped to owner + organization
+  seed.py     synthetic demo data
+backend/alembic/   migrations
+backend/tests/     API, isolation, migration and seed tests (real PostgreSQL)
+```
 
 ## License
 
