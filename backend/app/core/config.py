@@ -1,6 +1,7 @@
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal
+from urllib.parse import parse_qsl, urlencode
 
 from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -10,10 +11,25 @@ _PLACEHOLDER_MARKERS = ("replace-with", "change-me", "changeme", "your-secret", 
 
 
 def normalize_database_url(url: str) -> str:
-    """Forces the asyncpg driver prefix on plain `postgres://` / `postgresql://` URLs."""
+    """Forces the asyncpg driver on plain `postgres://` / `postgresql://` URLs and maps the
+    libpq `sslmode` query parameter (used by Supabase and most providers) to asyncpg's `ssl`,
+    which is the only spelling asyncpg accepts."""
     for prefix in ("postgres://", "postgresql://"):
         if url.startswith(prefix):
-            return "postgresql+asyncpg://" + url[len(prefix) :]
+            url = "postgresql+asyncpg://" + url[len(prefix) :]
+            break
+    base, sep, query = url.partition("?")
+    if not sep:
+        return url
+    params = parse_qsl(query, keep_blank_values=True)
+    if any(key == "sslmode" for key, _ in params):
+        has_ssl = any(key == "ssl" for key, _ in params)
+        params = [
+            ("ssl", value) if key == "sslmode" else (key, value)
+            for key, value in params
+            if not (key == "sslmode" and has_ssl)
+        ]
+        return f"{base}?{urlencode(params)}"
     return url
 
 
@@ -114,8 +130,19 @@ class Settings(BaseSettings):
     @field_validator("database_url")
     @classmethod
     def _asyncpg_driver(cls, value: str) -> str:
-        # Managed Postgres (Render) hands out `postgresql://` / `postgres://` URLs.
+        # Managed Postgres (Supabase, Render) hands out `postgresql://` / `postgres://` URLs.
         return normalize_database_url(value)
+
+    @field_validator("anthropic_api_key", "logfire_token", "metrics_token", mode="before")
+    @classmethod
+    def _blank_optional_secret_is_unset(cls, value: object) -> object:
+        # A blank env var (e.g. an empty dashboard field) must mean "not configured": an empty
+        # METRICS_TOKEN would otherwise expose /metrics behind an empty bearer token.
+        if isinstance(value, str) and not value.strip():
+            return None
+        if isinstance(value, SecretStr) and not value.get_secret_value().strip():
+            return None
+        return value
 
     @field_validator("jwt_secret")
     @classmethod

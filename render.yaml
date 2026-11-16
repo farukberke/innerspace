@@ -17,7 +17,9 @@ services:
       - key: VITE_API_URL # public API URL, e.g. https://innerspace-api.onrender.com (build time)
         sync: false
 
-  # --- API ---
+  # --- API + Celery worker + beat in ONE container (Starter, 512 MB) ---
+  # `start.sh` runs uvicorn and a thread-pool Celery worker with embedded beat; if either
+  # dies the container exits and Render restarts it. Database: Supabase (free), not Render.
   - type: web
     name: innerspace-api
     runtime: docker
@@ -25,21 +27,30 @@ services:
     plan: starter
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
+    dockerCommand: ./start.sh
     healthCheckPath: /health
     preDeployCommand: alembic upgrade head
     envVars:
       - key: APP_ENV
         value: production
-      - key: PORT # the Dockerfile CMD listens on 8000
+      - key: PORT # start.sh / uvicorn listen here
         value: "8000"
       - key: TRUSTED_PROXY_HOPS # Render puts exactly one proxy in front; verify after deploy
         value: "1"
       - key: RATE_LIMIT_BACKEND
         value: redis
-      - key: DATABASE_URL
-        fromDatabase:
-          name: innerspace-db
-          property: connectionString
+      - key: CELERY_CONCURRENCY # worker threads; keep low for the 512 MB instance
+        value: "2"
+      - key: MALLOC_ARENA_MAX # caps glibc per-thread arenas (threaded worker) to limit RSS growth
+        value: "2"
+      # Supabase free tier: few pooler connections. The API pool plus one engine per running
+      # job must stay well under the pooler's client limit.
+      - key: DB_POOL_SIZE
+        value: "3"
+      - key: DB_MAX_OVERFLOW
+        value: "2"
+      - key: DATABASE_URL # Supabase SESSION pooler URI (IPv4, port 5432) + ?sslmode=require
+        sync: false
       - key: CELERY_BROKER_URL
         fromService:
           type: keyvalue
@@ -51,41 +62,9 @@ services:
         sync: false
       - key: ANTHROPIC_API_KEY
         sync: false
-      - key: METRICS_TOKEN
+      - key: METRICS_TOKEN # optional; blank = /metrics disabled
         sync: false
-      - key: LOGFIRE_TOKEN
-        sync: false
-
-  # --- Worker: Celery + embedded beat (stale-job reaper, refresh-token cleanup) ---
-  - type: worker
-    name: innerspace-worker
-    runtime: docker
-    region: frankfurt
-    plan: starter
-    dockerfilePath: ./backend/Dockerfile
-    dockerContext: ./backend
-    dockerCommand: celery -A app.worker worker --loglevel=INFO --concurrency=2 --beat --schedule=/tmp/celerybeat-schedule
-    envVars:
-      - key: APP_ENV
-        value: production
-      - key: TRUSTED_PROXY_HOPS
-        value: "1"
-      - key: RATE_LIMIT_BACKEND
-        value: redis
-      - key: DATABASE_URL
-        fromDatabase:
-          name: innerspace-db
-          property: connectionString
-      - key: CELERY_BROKER_URL
-        fromService:
-          type: keyvalue
-          name: innerspace-redis
-          property: connectionString
-      - key: JWT_SECRET # settings validation only; the worker never issues or verifies tokens
-        generateValue: true
-      - key: ANTHROPIC_API_KEY # same value as the API
-        sync: false
-      - key: LOGFIRE_TOKEN
+      - key: LOGFIRE_TOKEN # optional; blank = tracing off
         sync: false
 
   # --- Redis-compatible Key Value (rate limits + Celery broker), internal access only ---
@@ -95,10 +74,3 @@ services:
     plan: free
     maxmemoryPolicy: noeviction
     ipAllowList: []
-
-databases:
-  - name: innerspace-db
-    region: frankfurt
-    plan: basic-256mb
-    databaseName: innerspace
-    user: innerspace

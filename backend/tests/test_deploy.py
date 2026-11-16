@@ -39,6 +39,36 @@ def test_database_url_is_normalized_to_asyncpg(raw: str, expected: str) -> None:
     assert _settings(database_url=raw).database_url == expected
 
 
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        # Supabase session pooler, as copied from its dashboard with libpq's sslmode.
+        (
+            "postgresql://postgres.ref:pw@aws-0-eu-central-1.pooler.supabase.com:5432/postgres"
+            "?sslmode=require",
+            "postgresql+asyncpg://postgres.ref:pw@aws-0-eu-central-1.pooler.supabase.com:5432/"
+            "postgres?ssl=require",
+        ),
+        ("postgresql://u:p@h/d?ssl=require", "postgresql+asyncpg://u:p@h/d?ssl=require"),
+        # An explicit asyncpg `ssl` wins; the libpq duplicate is dropped.
+        (
+            "postgresql://u:p@h/d?sslmode=disable&ssl=require&application_name=api",
+            "postgresql+asyncpg://u:p@h/d?ssl=require&application_name=api",
+        ),
+    ],
+)
+def test_sslmode_is_mapped_to_asyncpg_ssl(raw: str, expected: str) -> None:
+    assert normalize_database_url(raw) == expected
+    assert "sslmode" not in _settings(database_url=raw).database_url
+
+
+@pytest.mark.parametrize("field", ["metrics_token", "logfire_token", "anthropic_api_key"])
+@pytest.mark.parametrize("blank", ["", "   "])
+def test_blank_optional_secret_counts_as_unset(field: str, blank: str) -> None:
+    # A blank METRICS_TOKEN must not enable /metrics behind an empty bearer token.
+    assert getattr(_settings(**{field: blank}), field) is None
+
+
 def test_empty_database_url_still_rejected() -> None:
     with pytest.raises(ValidationError):
         _settings(database_url="")
@@ -98,3 +128,42 @@ def test_purge_task_is_scheduled() -> None:
     schedule = worker.celery_app.conf.beat_schedule
     assert schedule["purge-expired-refresh-tokens"]["task"] == "auth.purge_expired_refresh_tokens"
     assert "auth.purge_expired_refresh_tokens" in worker.celery_app.tasks
+
+
+class _FakeBeat:
+    def __init__(self) -> None:
+        self.started = 0
+        self.stopped = 0
+
+    def start(self) -> None:
+        self.started += 1
+
+    def stop(self) -> None:
+        self.stopped += 1
+
+
+def test_beat_thread_starts_once_and_only_when_enabled(monkeypatch: pytest.MonkeyPatch) -> None:
+    created: list[tuple[_FakeBeat, dict[str, object]]] = []
+
+    def fake_embedded(app: object, **kwargs: object) -> _FakeBeat:
+        beat = _FakeBeat()
+        created.append((beat, kwargs))
+        return beat
+
+    monkeypatch.setattr(worker, "EmbeddedService", fake_embedded)
+    monkeypatch.setattr(worker, "_beat_service", None)
+
+    monkeypatch.delenv("BEAT_IN_THREAD", raising=False)
+    worker._start_beat_thread()
+    assert created == []  # off by default: separate workers must not all run beat
+
+    monkeypatch.setenv("BEAT_IN_THREAD", "1")
+    worker._start_beat_thread()
+    worker._start_beat_thread()  # a second worker_ready must not start a second scheduler
+    assert len(created) == 1
+    beat, kwargs = created[0]
+    assert kwargs["thread"] is True  # a thread, not a forked process (512 MB budget)
+    assert beat.started == 1
+
+    worker._stop_beat_thread()
+    assert beat.stopped == 1

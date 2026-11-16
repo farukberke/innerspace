@@ -78,23 +78,35 @@ Full stack in containers (db, redis, api with migrations, worker + beat): `docke
 
 `.github/workflows/ci.yml` runs on every push/PR: backend (Postgres + Redis services, `uv sync --frozen`, `alembic upgrade head`, `pytest`, `ruff`, `pip-audit`), frontend (`npm ci`, lint, tests, build, `npm audit --omit=dev --audit-level=high`) and a Docker image build.
 
-### Deploying to Render
+### Deploying to Render + Supabase (~$7/month)
 
-`render.yaml` is a Blueprint: static site (frontend, SPA rewrite), API web service (Docker, `/health` check, `alembic upgrade head` as pre-deploy command), Celery worker + beat (stale-job reaper, expired refresh-token cleanup), Key Value (Redis, free) and PostgreSQL (`basic-256mb`, paid). Everything is in region `frankfurt`. Creating the Blueprint **incurs charges** (API, worker, database); check current plans/prices first.
+Cost-optimised layout for a demo: **one** paid Render instance, everything else on free tiers.
 
-1. Push the repo to GitHub; Render dashboard: **New -> Blueprint**, select the repo.
-2. Enter the `sync: false` values when asked (table below). `DATABASE_URL` / `CELERY_BROKER_URL` are wired automatically; `postgres://` URLs are normalized to the asyncpg driver by the app. `JWT_SECRET` is generated.
-3. Circular URLs: the frontend needs the API URL and the API needs the frontend origin. After the first sync, copy both public URLs and set `VITE_API_URL` (static site; then redeploy it, it is baked at build time) and `CORS_ORIGINS` (API).
+| Piece | Where | Plan |
+|---|---|---|
+| Frontend (static site, SPA rewrite) | Render | free |
+| API **+ Celery worker + beat** in one container (`backend/start.sh`) | Render web service | Starter (512 MB) |
+| Redis (rate limits, Celery broker) | Render Key Value | free |
+| PostgreSQL | Supabase | free |
+
+`start.sh` runs uvicorn and a **thread-pool** Celery worker (no forked children; LLM calls are I/O-bound) with embedded beat (stale-job reaper, expired refresh-token cleanup). If either process exits, the container exits and Render restarts it, so the API never keeps running with a dead worker. Measured locally under a 512 MB limit: ~410 MB idle (two Python processes of ~200 MB each), leaving ~100 MB headroom. `MALLOC_ARENA_MAX=2` limits growth from the worker's threads. Check the service's Metrics tab after deploy; if memory gets tight, set `CELERY_CONCURRENCY=1`. Locally, `docker compose` still runs API and worker as separate containers.
+
+1. **Supabase:** create a project in region **Frankfurt (eu-central-1)**. *Connect → Session pooler* (IPv4, port `5432`) and copy the URI; append `?sslmode=require` (the app maps it to asyncpg's `ssl=require`). Do not use the direct connection (IPv6-only on the free plan) or the transaction pooler (port `6543`, breaks asyncpg prepared statements).
+2. **Render:** dashboard → **New → Blueprint**, select the repo. Enter the `sync: false` values (table below). `CELERY_BROKER_URL` is wired automatically; `JWT_SECRET` is generated. Migrations run as the pre-deploy command.
+3. **Circular URLs:** the frontend needs the API URL and the API needs the frontend origin. After the first sync, copy both public URLs and set `VITE_API_URL` (static site; then redeploy it, it is baked at build time) and `CORS_ORIGINS` (API).
 4. Verify the production readiness list below.
 
 | Variable | Service | Notes |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | api, worker | without it AI endpoints answer 503 |
+| `DATABASE_URL` | api | Supabase session-pooler URI + `?sslmode=require` |
+| `ANTHROPIC_API_KEY` | api | without it AI endpoints answer 503 |
 | `CORS_ORIGINS` | api | frontend origin, no wildcard, no trailing slash |
 | `VITE_API_URL` | web | public API URL, `https://...` |
-| `METRICS_TOKEN` | api | optional; `/metrics` is 404 without it |
-| `LOGFIRE_TOKEN` | api, worker | optional; tracing is a no-op without it |
+| `METRICS_TOKEN` | api | optional; blank = `/metrics` is 404 |
+| `LOGFIRE_TOKEN` | api | optional; blank = tracing off |
 | `SEED_PASSWORD`, `SEED_DEMO=1` | api (temporary) | only for the demo seed, see below |
+
+Free-tier notes: Supabase pauses projects after a period of inactivity (beat's periodic jobs query the database, which normally keeps it active; a paused project is resumed from the Supabase dashboard). The pool is kept small (`DB_POOL_SIZE=3`, `DB_MAX_OVERFLOW=2`) for the pooler's connection limit.
 
 ### Demo accounts
 
@@ -124,7 +136,8 @@ Live demo: _link will be added after the first deploy_ (`https://<your-web>.onre
 - [ ] LLM spend limit: per-user caps (`LLM_DAILY_REQUEST_LIMIT`, `LLM_DAILY_COST_LIMIT_USD`) plus a monthly spend limit set in the Anthropic console.
 - [ ] `METRICS_TOKEN` set (or `/metrics` left unset = 404) and never in a URL.
 - [ ] `SEED_DEMO` / `SEED_PASSWORD` removed after seeding; `JWT_SECRET` not shared with anything else.
-- [ ] Worker logs show `celery ... ready` and beat started; `/health/ready` is 200.
+- [ ] API logs show `celery ... ready` and beat started (same container); `/health/ready` is 200 (Supabase reachable).
+- [ ] Memory stays under 512 MB under load (Render → Metrics).
 
 ### Evaluation, rate limiting and observability (Phase 5)
 

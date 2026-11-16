@@ -1,17 +1,23 @@
 """Celery application and tasks. Start a worker with:
     celery -A app.worker worker --loglevel=INFO
 
-Embed the scheduler (stale-job reaper) with `-B`, or run `celery -A app.worker beat` apart.
+Embed the scheduler (stale-job reaper) with `-B`, run `celery -A app.worker beat` apart, or set
+BEAT_IN_THREAD=1 to run it as a thread inside this worker process (single-container deploy).
 
 Task arguments are a job id and the originating request ID only; results are never stored
 (`ignore_result`), so neither the broker nor a result backend ever sees content."""
 
 import asyncio
 import logging
+import os
+import tempfile
 import time
 import uuid
+from pathlib import Path
+from typing import Any
 
-from celery import Celery
+from celery import Celery, signals
+from celery.beat import EmbeddedService
 
 from app.ai.llm import AiUnavailableError, build_model
 from app.core.config import Settings, get_settings
@@ -44,6 +50,32 @@ celery_app.conf.update(
         },
     },
 )
+
+
+# Beat as a THREAD inside the worker process (BEAT_IN_THREAD=1, used by start.sh on the
+# 512 MB single-container deploy). Celery's own `--beat` forks a separate ~150 MB process.
+# Exactly one worker may enable this, otherwise periodic tasks would run more than once.
+_beat_service: Any = None  # celery.beat.Service running in a thread
+
+
+@signals.worker_ready.connect
+def _start_beat_thread(**_: object) -> None:
+    global _beat_service  # noqa: PLW0603
+    if os.environ.get("BEAT_IN_THREAD") != "1" or _beat_service is not None:
+        return
+    _beat_service = EmbeddedService(
+        celery_app,
+        thread=True,
+        schedule_filename=str(Path(tempfile.gettempdir()) / "celerybeat-schedule"),
+    )
+    _beat_service.start()
+    logger.info("beat_thread_started")
+
+
+@signals.worker_shutdown.connect
+def _stop_beat_thread(**_: object) -> None:
+    if _beat_service is not None:
+        _beat_service.stop()
 
 
 async def _process(settings: Settings, job_id: uuid.UUID, final_attempt: bool) -> jobs.JobOutcome:
