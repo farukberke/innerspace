@@ -116,7 +116,13 @@ Public sign-up stays closed. To load the synthetic demo clinics once, open a She
 SEED_DEMO=1 SEED_PASSWORD='<choose 12+ chars>' python -m app.seed
 ```
 
-It refuses to run in production without both values, is idempotent (existing organizations are skipped) and writes only fictional data. The password is never in the repo or printed. All demo users share it:
+It refuses to run in production without both values, is idempotent (existing organizations are skipped) and writes only fictional data. Demo content is in Turkish, like the UI, and medication names are clearly fictional.
+
+To restore the demo to a clean state (e.g. after many visitors), run the same command with `--reset`. It deletes **only** the two demo organizations (`demo-clinic`, `other-clinic`) and everything in them, including accounts created there by invitation, then re-seeds; audit logs are kept and a `demo_reset` record is added:
+
+```bash
+SEED_DEMO=1 SEED_PASSWORD='<choose 12+ chars>' python -m app.seed --reset
+``` The password is never in the repo or printed. All demo users share it:
 
 | Role | Login |
 |---|---|

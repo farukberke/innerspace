@@ -3,8 +3,11 @@
 Usage (from `backend/`):  uv run python -m app.seed
 Production (demo deployment): SEED_DEMO=1 SEED_PASSWORD=<12+ chars> python -m app.seed
 Idempotent: organizations that already exist (by slug) are skipped.
+Reset (deletes ONLY the demo organizations below and everything in them, then re-seeds):
+    SEED_DEMO=1 SEED_PASSWORD=<12+ chars> python -m app.seed --reset
 """
 
+import argparse
 import asyncio
 import random
 import secrets
@@ -12,7 +15,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings, get_settings
@@ -21,6 +24,8 @@ from app.core.security import hash_password
 from app.models import (
     Appointment,
     AppointmentKind,
+    AuditLog,
+    Base,
     CareAssignment,
     Entry,
     EntryKind,
@@ -47,9 +52,9 @@ class SeedOrg:
 ORGS: tuple[SeedOrg, ...] = (
     SeedOrg(
         slug="demo-clinic",
-        name="Demo Clinic (synthetic)",
+        name="Demo Klinik (sentetik)",
         users=(
-            SeedUser("admin@demo-clinic.test", "Deniz Admin", UserRole.ORG_ADMIN),
+            SeedUser("admin@demo-clinic.test", "Deniz Yönetici", UserRole.ORG_ADMIN),
             SeedUser("dr.elif@demo-clinic.test", "Dr. Elif Kaya", UserRole.CLINICIAN),
             SeedUser("dr.mert@demo-clinic.test", "Dr. Mert Aydın", UserRole.CLINICIAN),
             SeedUser("client.ayse@demo-clinic.test", "Ayşe Y.", UserRole.CLIENT),
@@ -60,25 +65,35 @@ ORGS: tuple[SeedOrg, ...] = (
     # A second tenant, used to demonstrate and test organization isolation.
     SeedOrg(
         slug="other-clinic",
-        name="Other Clinic (synthetic)",
+        name="Diğer Klinik (sentetik)",
         users=(
-            SeedUser("admin@other-clinic.test", "Ozan Admin", UserRole.ORG_ADMIN),
+            SeedUser("admin@other-clinic.test", "Ozan Yönetici", UserRole.ORG_ADMIN),
             SeedUser("dr.selin@other-clinic.test", "Dr. Selin Er", UserRole.CLINICIAN),
             SeedUser("client.emre@other-clinic.test", "Emre K.", UserRole.CLIENT),
         ),
     ),
 )
 
+# Demo content is Turkish, like the UI. Medication names stay obviously fictional.
 _QUICK_NOTES = (
-    "Slept badly, felt tense most of the morning.",
-    "Good walk after work, mood lifted a bit.",
-    "Argument with a colleague; kept replaying it in my head.",
-    "Quiet day. Tried the breathing exercise twice.",
-    "Felt more like myself today.",
+    "Kötü uyudum, sabahın çoğunda gergin hissettim.",
+    "İşten sonra güzel bir yürüyüş yaptım, ruh halim biraz düzeldi.",
+    "Bir iş arkadaşımla tartıştım; kafamda tekrar tekrar düşündüm.",
+    "Sakin bir gündü. Nefes egzersizini iki kez denedim.",
+    "Bugün kendimi daha çok kendim gibi hissettim.",
 )
-_PANIC_SYMPTOMS = ("racing heart", "shortness of breath", "dizziness", "sweating", "trembling")
-_PANIC_TRIGGERS = ("crowded metro", "work meeting", "no clear trigger", "supermarket queue")
-_AVOIDANCE_SITUATIONS = ("taking the metro", "a friend's birthday dinner", "phone call to the bank")
+_PANIC_SYMPTOMS = ("kalp çarpıntısı", "nefes darlığı", "baş dönmesi", "terleme", "titreme")
+_PANIC_TRIGGERS = (
+    "kalabalık metro",
+    "iş toplantısı",
+    "belirgin bir tetikleyici yok",
+    "market kuyruğu",
+)
+_AVOIDANCE_SITUATIONS = (
+    "metroya binmek",
+    "bir arkadaşın doğum günü yemeği",
+    "bankayı telefonla aramak",
+)
 
 
 def _entry_payload(rng: random.Random, kind: EntryKind) -> tuple[str | None, dict[str, Any]]:
@@ -86,7 +101,7 @@ def _entry_payload(rng: random.Random, kind: EntryKind) -> tuple[str | None, dic
         case EntryKind.QUICK:
             return rng.choice(_QUICK_NOTES), {"mood": rng.randint(1, 5)}
         case EntryKind.PANIC:
-            return "Episode passed after a while.", {
+            return "Atak bir süre sonra geçti.", {
                 "intensity": rng.randint(4, 9),
                 "duration_minutes": rng.choice((5, 10, 15, 25)),
                 "symptoms": rng.sample(_PANIC_SYMPTOMS, k=rng.randint(1, 3)),
@@ -95,9 +110,9 @@ def _entry_payload(rng: random.Random, kind: EntryKind) -> tuple[str | None, dic
         case EntryKind.MEDICATION:
             taken = rng.random() > 0.15
             return None, {
-                "medication_name": "Medication A (fictional)",
+                "medication_name": "İlaç A (kurgusal)",
                 "taken": taken,
-                "side_effects": ["mild nausea"] if taken and rng.random() < 0.2 else [],
+                "side_effects": ["hafif bulantı"] if taken and rng.random() < 0.2 else [],
             }
         case EntryKind.AVOIDANCE:
             return None, {
@@ -195,6 +210,41 @@ async def seed(session: AsyncSession, *, password: str, now: datetime | None = N
     return created
 
 
+async def reset_demo(session: AsyncSession) -> list[str]:
+    """Deletes the demo organizations (only the slugs in `ORGS`) and every row they own, so
+    `seed` can recreate them. Audit logs are kept on purpose (they must outlive the rows they
+    refer to); a `demo_reset` record is added instead. Returns the deleted slugs."""
+    rows = (
+        await session.execute(
+            select(Organization.id, Organization.slug).where(
+                Organization.slug.in_([o.slug for o in ORGS])
+            )
+        )
+    ).all()
+    if not rows:
+        return []
+    org_ids = [r.id for r in rows]
+    # Dependents first. Tables without `organization_id` (summary statements/citations,
+    # refresh tokens) are removed by ON DELETE CASCADE from their parents.
+    for table in reversed(Base.metadata.sorted_tables):
+        if table.name in ("audit_logs", "organizations") or "organization_id" not in table.c:
+            continue
+        await session.execute(delete(table).where(table.c.organization_id.in_(org_ids)))
+    await session.execute(delete(Organization).where(Organization.id.in_(org_ids)))
+    session.add_all(
+        AuditLog(
+            organization_id=r.id,
+            action="demo_reset",
+            target_type="organization",
+            target_id=r.id,
+            detail={"slug": r.slug},
+        )
+        for r in rows
+    )
+    await session.commit()
+    return [r.slug for r in rows]
+
+
 def ensure_seed_allowed(settings: Settings) -> None:
     """Production seeding needs SEED_DEMO=1 and an explicit SEED_PASSWORD (never printed)."""
     if not settings.is_production:
@@ -205,7 +255,7 @@ def ensure_seed_allowed(settings: Settings) -> None:
         raise SystemExit("SEED_DEMO in production requires SEED_PASSWORD (at least 12 characters).")
 
 
-async def main() -> None:
+async def main(*, reset: bool = False) -> None:
     settings = get_settings()
     ensure_seed_allowed(settings)
     password = (
@@ -216,6 +266,9 @@ async def main() -> None:
     engine = create_engine(settings)
     try:
         async with create_sessionmaker(engine)() as session:
+            if reset:
+                deleted = await reset_demo(session)
+                print(f"Deleted demo organizations: {deleted or 'none'}")  # noqa: T201
             created = await seed(session, password=password)
     finally:
         await engine.dispose()
@@ -225,4 +278,10 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    parser = argparse.ArgumentParser(description="Seed synthetic demo data.")
+    parser.add_argument(
+        "--reset",
+        action="store_true",
+        help="delete the demo organizations (and everything in them) before seeding",
+    )
+    asyncio.run(main(reset=parser.parse_args().reset))
