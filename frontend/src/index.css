@@ -68,24 +68,19 @@
   }
 }
 
-/* Single link look: underline draws in on hover/focus. */
+/* Single link look: underline sits right under the text; it thickens on hover/focus. */
 .link {
   @apply font-medium text-brand-700;
-  background: linear-gradient(currentColor, currentColor) no-repeat 0 100% / 100% 1px;
-  transition: background-size 0.25s ease;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.25em;
+  transition: text-decoration-thickness 0.2s ease;
 }
 .link:hover,
 .link:focus-visible {
-  background-size: 100% 2px;
+  text-decoration-thickness: 2px;
 }
 @media (prefers-reduced-motion: no-preference) {
-  .link {
-    background-size: 0 1px;
-  }
-  .link:hover,
-  .link:focus-visible {
-    background-size: 100% 1px;
-  }
   .lift {
     transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
