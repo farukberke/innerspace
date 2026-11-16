@@ -56,7 +56,7 @@ export function TopicsSection({ summary, onSaved }: { summary: Summary; onSaved:
     <section aria-labelledby="topics-title" className="mb-4">
       <Card>
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 id="topics-title" className="text-sm font-semibold text-slate-800">
+          <h2 id="topics-title" className="text-base font-semibold text-ink">
             Konuşmak istediğim konular
           </h2>
           {!editing && !shared && (
@@ -96,10 +96,10 @@ export function TopicsSection({ summary, onSaved }: { summary: Summary; onSaved:
                 Vazgeç
               </Button>
             </div>
-            <p className="text-xs text-slate-500">En fazla {MAX_TOPICS} konu, her biri {MAX_LEN} karakter. Kaydetmek özeti taslağa döndürür; yeniden onaylaman gerekir.</p>
+            <p className="text-xs text-muted">En fazla {MAX_TOPICS} konu, her biri {MAX_LEN} karakter. Kaydetmek özeti taslağa döndürür; yeniden onaylaman gerekir.</p>
           </div>
         ) : summary.topics.length > 0 ? (
-          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-800">
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-ink">
             {summary.topics.map((t, i) => (
               <li key={i} className="break-words">
                 {t}
@@ -107,9 +107,9 @@ export function TopicsSection({ summary, onSaved }: { summary: Summary; onSaved:
             ))}
           </ul>
         ) : (
-          <p className="mt-2 text-sm text-slate-500">Seansta konuşmak istediğin konuları kendi cümlelerinle ekleyebilirsin.</p>
+          <p className="mt-2 text-sm text-muted">Seansta konuşmak istediğin konuları kendi cümlelerinle ekleyebilirsin.</p>
         )}
-        {shared && <p className="mt-2 text-xs text-slate-500">Konuları değiştirmek için önce paylaşımı geri al.</p>}
+        {shared && <p className="mt-2 text-xs text-muted">Konuları değiştirmek için önce paylaşımı geri al.</p>}
       </Card>
     </section>
   )

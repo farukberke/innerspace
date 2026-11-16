@@ -15,8 +15,8 @@ function Section({ title, items }: { title: string; items: string[] }) {
   if (items.length === 0) return null
   return (
     <div className="mt-3">
-      <h3 className="text-sm font-semibold text-slate-700">{title}</h3>
-      <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-slate-700">
+      <h3 className="text-base font-semibold text-ink-2">{title}</h3>
+      <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-ink-2">
         {items.map((t, i) => (
           <li key={i} className="break-words">
             {t}
@@ -90,7 +90,7 @@ export function AfterSession() {
           {data?.map((n) => (
             <li key={n.id}>
               <Card>
-                <p className="text-xs text-slate-500">{formatDateTime(n.created_at)}</p>
+                <p className="text-xs text-muted">{formatDateTime(n.created_at)}</p>
                 <Section title="Konuştuklarımız" items={n.discussed} />
                 <Section title="Deneyeceklerim" items={n.to_try} />
                 <Section title="Sonraki seansa sorularım" items={n.questions} />

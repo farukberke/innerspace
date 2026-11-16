@@ -53,17 +53,17 @@ export function Account() {
     <div>
       <PageHeader title="Hesabım" />
       {state.status === 'authed' && (
-        <p className="mb-4 text-sm text-slate-600">
+        <p className="mb-4 text-sm text-ink-2">
           {state.user.display_name} · {state.user.email}
         </p>
       )}
 
       <section aria-labelledby="export-title" className="mb-5">
         <Card>
-          <h2 id="export-title" className="text-sm font-semibold text-slate-800">
+          <h2 id="export-title" className="text-base font-semibold text-ink">
             Verimi indir
           </h2>
-          <p className="mt-1 text-sm text-slate-600">
+          <p className="mt-1 text-sm text-ink-2">
             Kayıtların, özetlerin (konular ve dayandığı kayıtlarla), seans sonrası notların, planın, randevuların ve profil bilgilerin tek bir JSON dosyası olarak iner. Yalnızca senin verin.
           </p>
           {exportError && <Alert>{exportError}</Alert>}
@@ -76,11 +76,11 @@ export function Account() {
       </section>
 
       <section aria-labelledby="delete-title">
-        <Card className="border-rose-200">
-          <h2 id="delete-title" className="text-sm font-semibold text-rose-800">
+        <Card className="border-danger-200">
+          <h2 id="delete-title" className="text-base font-semibold text-danger-800">
             Hesabımı sil
           </h2>
-          <p className="mt-1 text-sm text-slate-600">
+          <p className="mt-1 text-sm text-ink-2">
             Hesabın ve tüm verilerin (kayıtlar, özetler, notlar, plan, randevular) kalıcı olarak silinir. Paylaştığın özetler uzmanının ekranından da kaybolur. Bu işlem geri alınamaz. İstersen önce verini indir.
           </p>
           {!confirming ? (

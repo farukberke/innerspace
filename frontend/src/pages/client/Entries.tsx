@@ -85,8 +85,8 @@ export function Entries() {
               <Card>
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <Badge tone="indigo">{KIND_LABEL[e.kind]}</Badge>
-                    <span className="text-xs text-slate-500">{formatDateTime(e.occurred_at)}</span>
+                    <Badge tone="brand">{KIND_LABEL[e.kind]}</Badge>
+                    <span className="text-xs text-muted">{formatDateTime(e.occurred_at)}</span>
                   </div>
                   <div className="flex gap-1">
                     <Button variant="ghost" onClick={() => setEditing(e)}>
@@ -97,8 +97,8 @@ export function Entries() {
                     </Button>
                   </div>
                 </div>
-                {detailsLine(e) && <p className="mt-2 text-sm text-slate-700">{detailsLine(e)}</p>}
-                {e.note && <p className="mt-1 whitespace-pre-wrap break-words text-sm text-slate-600">{e.note}</p>}
+                {detailsLine(e) && <p className="mt-2 text-sm text-ink-2">{detailsLine(e)}</p>}
+                {e.note && <p className="mt-1 whitespace-pre-wrap break-words text-sm text-ink-2">{e.note}</p>}
               </Card>
             </li>
           ))}
@@ -109,7 +109,7 @@ export function Entries() {
           <Button variant="secondary" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - PAGE))}>
             Önceki
           </Button>
-          <span className="text-xs text-slate-500">
+          <span className="text-xs text-muted">
             {offset + 1}–{Math.min(offset + PAGE, data.total)} / {data.total}
           </span>
           <Button variant="secondary" disabled={offset + PAGE >= data.total} onClick={() => setOffset(offset + PAGE)}>

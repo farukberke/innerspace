@@ -1,26 +1,33 @@
 import { useId, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react'
+import { Link, type LinkProps } from 'react-router-dom'
 
 const inputCls =
-  'mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 disabled:bg-slate-100'
+  'mt-1 block min-h-11 w-full rounded-soft border border-line-strong bg-surface px-3 py-2 text-base text-ink placeholder:text-muted focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-200 disabled:bg-sunk aria-[invalid=true]:border-danger-600'
+
+type Variant = 'primary' | 'secondary' | 'danger' | 'ghost'
+
+/** The single button look. Primary + secondary are the pair; danger/ghost are for destructive and tertiary actions. */
+export function buttonCls(variant: Variant = 'primary', className = ''): string {
+  const styles: Record<Variant, string> = {
+    primary: 'bg-brand-600 text-white hover:bg-brand-700',
+    secondary: 'border border-line-strong bg-surface text-ink hover:bg-sunk',
+    danger: 'bg-danger-600 text-white hover:bg-danger-700',
+    ghost: 'text-brand-700 hover:bg-brand-50',
+  }
+  return `btn inline-flex min-h-11 items-center justify-center rounded-soft px-4 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50 ${styles[variant]} ${className}`
+}
 
 export function Button({
   variant = 'primary',
   className = '',
   ...props
-}: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'secondary' | 'danger' | 'ghost' }) {
-  const styles = {
-    primary: 'bg-indigo-600 text-white hover:bg-indigo-700',
-    secondary: 'border border-slate-300 bg-white text-slate-800 hover:bg-slate-50',
-    danger: 'bg-rose-600 text-white hover:bg-rose-700',
-    ghost: 'text-indigo-700 hover:bg-indigo-50',
-  }[variant]
-  return (
-    <button
-      type="button"
-      {...props}
-      className={`inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 disabled:cursor-not-allowed disabled:opacity-50 ${styles} ${className}`}
-    />
-  )
+}: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant }) {
+  return <button type="button" {...props} className={buttonCls(variant, className)} />
+}
+
+/** A router link that looks like a Button. */
+export function LinkButton({ variant = 'primary', className = '', ...props }: LinkProps & { variant?: Variant }) {
+  return <Link {...props} className={buttonCls(variant, className)} />
 }
 
 interface FieldProps {
@@ -32,12 +39,12 @@ export function TextField({ label, hint, ...props }: FieldProps & InputHTMLAttri
   const id = useId()
   return (
     <div>
-      <label htmlFor={id} className="block text-sm font-medium text-slate-700">
+      <label htmlFor={id} className="block text-sm font-semibold text-ink">
         {label}
       </label>
       <input id={id} {...props} className={inputCls} aria-describedby={hint ? `${id}-hint` : undefined} />
       {hint && (
-        <p id={`${id}-hint`} className="mt-1 text-xs text-slate-500">
+        <p id={`${id}-hint`} className="mt-1 text-sm text-muted">
           {hint}
         </p>
       )}
@@ -49,12 +56,12 @@ export function TextArea({ label, hint, ...props }: FieldProps & TextareaHTMLAtt
   const id = useId()
   return (
     <div>
-      <label htmlFor={id} className="block text-sm font-medium text-slate-700">
+      <label htmlFor={id} className="block text-sm font-semibold text-ink">
         {label}
       </label>
       <textarea id={id} rows={4} {...props} className={inputCls} aria-describedby={hint ? `${id}-hint` : undefined} />
       {hint && (
-        <p id={`${id}-hint`} className="mt-1 text-xs text-slate-500">
+        <p id={`${id}-hint`} className="mt-1 text-sm text-muted">
           {hint}
         </p>
       )}
@@ -66,7 +73,7 @@ export function SelectField({ label, children, ...props }: FieldProps & SelectHT
   const id = useId()
   return (
     <div>
-      <label htmlFor={id} className="block text-sm font-medium text-slate-700">
+      <label htmlFor={id} className="block text-sm font-semibold text-ink">
         {label}
       </label>
       <select id={id} {...props} className={inputCls}>
@@ -79,9 +86,9 @@ export function SelectField({ label, children, ...props }: FieldProps & SelectHT
 export function CheckField({ label, ...props }: { label: string } & InputHTMLAttributes<HTMLInputElement>) {
   const id = useId()
   return (
-    <div className="flex items-center gap-2">
-      <input id={id} type="checkbox" {...props} className="h-4 w-4 rounded border-slate-300 text-indigo-600" />
-      <label htmlFor={id} className="text-sm text-slate-700">
+    <div className="flex min-h-11 items-center gap-3">
+      <input id={id} type="checkbox" {...props} className="h-5 w-5 rounded border-line-strong accent-brand-600" />
+      <label htmlFor={id} className="text-sm text-ink">
         {label}
       </label>
     </div>
@@ -90,25 +97,29 @@ export function CheckField({ label, ...props }: { label: string } & InputHTMLAtt
 
 export function Alert({ kind = 'error', children }: { kind?: 'error' | 'info' | 'success'; children: ReactNode }) {
   const styles = {
-    error: 'border-rose-200 bg-rose-50 text-rose-800',
-    info: 'border-sky-200 bg-sky-50 text-sky-800',
-    success: 'border-emerald-200 bg-emerald-50 text-emerald-800',
+    error: 'border-danger-200 bg-danger-50 text-danger-800',
+    info: 'border-info-200 bg-info-50 text-info-800',
+    success: 'border-ok-200 bg-ok-50 text-ok-800',
   }[kind]
   return (
-    <div role={kind === 'error' ? 'alert' : 'status'} className={`rounded-lg border px-4 py-3 text-sm ${styles}`}>
+    <div role={kind === 'error' ? 'alert' : 'status'} className={`rounded-soft border px-4 py-3 text-sm ${styles}`}>
       {children}
     </div>
   )
 }
 
-export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <div className={`rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5 ${className}`}>{children}</div>
+export function Card({ children, className = '', interactive = false }: { children: ReactNode; className?: string; interactive?: boolean }) {
+  return (
+    <div className={`rounded-soft-lg border border-line bg-surface p-4 sm:p-5 ${interactive ? 'lift hover:border-line-strong' : ''} ${className}`}>
+      {children}
+    </div>
+  )
 }
 
 export function PageHeader({ title, actions }: { title: string; actions?: ReactNode }) {
   return (
     <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-      <h1 className="text-xl font-semibold text-slate-900 sm:text-2xl">{title}</h1>
+      <h1 className="text-2xl font-semibold text-ink sm:text-3xl">{title}</h1>
       <div className="flex flex-wrap gap-2">{actions}</div>
     </div>
   )
@@ -116,23 +127,23 @@ export function PageHeader({ title, actions }: { title: string; actions?: ReactN
 
 export function Spinner() {
   return (
-    <p role="status" className="py-8 text-center text-sm text-slate-500">
+    <p role="status" className="py-10 text-center text-base text-muted">
       Yükleniyor…
     </p>
   )
 }
 
 export function Empty({ children }: { children: ReactNode }) {
-  return <p className="rounded-xl border border-dashed border-slate-300 py-10 text-center text-sm text-slate-500">{children}</p>
+  return <p className="rounded-soft border border-dashed border-line-strong px-4 py-10 text-center text-base text-muted">{children}</p>
 }
 
-export function Badge({ children, tone = 'slate' }: { children: ReactNode; tone?: 'slate' | 'indigo' | 'green' | 'amber' | 'rose' }) {
+export function Badge({ children, tone = 'slate' }: { children: ReactNode; tone?: 'slate' | 'brand' | 'green' | 'amber' | 'rose' }) {
   const styles = {
-    slate: 'bg-slate-100 text-slate-700',
-    indigo: 'bg-indigo-100 text-indigo-800',
-    green: 'bg-emerald-100 text-emerald-800',
-    amber: 'bg-amber-100 text-amber-800',
-    rose: 'bg-rose-100 text-rose-800',
+    slate: 'bg-sunk text-ink-2',
+    brand: 'bg-brand-100 text-brand-800',
+    green: 'bg-ok-100 text-ok-800',
+    amber: 'bg-warn-100 text-warn-800',
+    rose: 'bg-danger-100 text-danger-800',
   }[tone]
   return <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${styles}`}>{children}</span>
 }

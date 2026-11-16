@@ -28,10 +28,10 @@ export function ClinicianClients() {
           {data?.map((c) => (
             <li key={c.id}>
               <Card>
-                <Link to={`/clinician/clients/${c.id}`} className="font-medium text-indigo-700 hover:underline">
+                <Link to={`/clinician/clients/${c.id}`} className="link inline-flex min-h-11 items-center">
                   {c.display_name}
                 </Link>
-                <p className="mt-1 text-xs text-slate-500">
+                <p className="mt-1 text-xs text-muted">
                   {c.next_appointment_at ? `Sonraki randevu: ${formatDateTime(c.next_appointment_at)}` : 'Planlı randevu yok'}
                 </p>
               </Card>
@@ -60,10 +60,10 @@ export function ClinicianSummaries() {
           {summaries.data?.map((s) => (
             <li key={s.id}>
               <Card>
-                <Link to={`/clinician/summaries/${s.id}`} className="font-medium text-indigo-700 hover:underline">
+                <Link to={`/clinician/summaries/${s.id}`} className="link inline-flex min-h-11 items-center">
                   {s.title}
                 </Link>
-                <p className="mt-1 text-xs text-slate-500">
+                <p className="mt-1 text-xs text-muted">
                   {names.get(s.client_id) ?? 'Danışan'} · {formatDate(s.period_start)} – {formatDate(s.period_end)} · Paylaşım:{' '}
                   {s.shared_at ? formatDateTime(s.shared_at) : '—'}
                 </p>
@@ -84,25 +84,25 @@ export function ClinicianSummaryDetail() {
   return (
     <div>
       <p className="mb-2 text-sm">
-        <Link to="/clinician/summaries" className="text-indigo-700 hover:underline">
+        <Link to="/clinician/summaries" className="link inline-flex min-h-11 items-center">
           ← Paylaşılan özetler
         </Link>
       </p>
       <PageHeader title={data.title} />
-      <p className="mb-4 text-xs text-slate-500">
+      <p className="mb-4 text-xs text-muted">
         {formatDate(data.period_start)} – {formatDate(data.period_end)}
       </p>
       <Card>
-        <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-800">{data.body}</p>
+        <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-ink">{data.body}</p>
       </Card>
       <AiDisclaimer audience="clinician" />
       {data.topics.length > 0 && (
         <section aria-labelledby="topics-title" className="mt-4">
           <Card>
-            <h2 id="topics-title" className="text-sm font-semibold text-slate-800">
+            <h2 id="topics-title" className="text-base font-semibold text-ink">
               Danışanın konuşmak istediği konular
             </h2>
-            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-800">
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-ink">
               {data.topics.map((t, i) => (
                 <li key={i} className="break-words">
                   {t}
@@ -112,7 +112,7 @@ export function ClinicianSummaryDetail() {
           </Card>
         </section>
       )}
-      <p className="mt-3 text-xs text-slate-500">Bu özet danışan tarafından onaylanıp seninle paylaşıldı; danışan paylaşımı geri alabilir.</p>
+      <p className="mt-3 text-xs text-muted">Bu özet danışan tarafından onaylanıp seninle paylaşıldı; danışan paylaşımı geri alabilir.</p>
     </div>
   )
 }

@@ -61,10 +61,10 @@ export function AdminUsers() {
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="min-w-0">
                     <p className="truncate font-medium">{u.display_name}</p>
-                    <p className="truncate text-xs text-slate-500">{u.email}</p>
+                    <p className="truncate text-xs text-muted">{u.email}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge tone="indigo">{ROLE_LABEL[u.role]}</Badge>
+                    <Badge tone="brand">{ROLE_LABEL[u.role]}</Badge>
                     <Badge tone={u.is_active ? 'green' : 'slate'}>{u.is_active ? 'Aktif' : 'Pasif'}</Badge>
                     {u.id !== selfId && (
                       <Button variant="secondary" onClick={() => toggle(u.id, !u.is_active)}>
@@ -155,7 +155,7 @@ export function AdminAssignments() {
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-sm">
                     <span className="font-medium">{names.get(a.clinician_id) ?? 'Uzman'}</span> → {names.get(a.client_id) ?? 'Danışan'}
-                    <span className="ml-2 text-xs text-slate-500">{formatDate(a.created_at)}</span>
+                    <span className="ml-2 text-xs text-muted">{formatDate(a.created_at)}</span>
                   </p>
                   <Button variant="ghost" onClick={() => remove(a.id)}>
                     Sil

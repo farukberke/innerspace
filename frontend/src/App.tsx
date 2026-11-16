@@ -13,11 +13,13 @@ import { Summaries } from './pages/client/Summaries'
 import { SummaryDetail } from './pages/client/SummaryDetail'
 import { ClinicianClients, ClinicianSummaries, ClinicianSummaryDetail } from './pages/clinician/Clinician'
 import { ClinicianClientDetail } from './pages/clinician/ClientDetail'
+import { Landing } from './pages/Landing'
 import { Login } from './pages/Login'
 
 export function App() {
   return (
     <Routes>
+      <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
       <Route path="/accept-invitation" element={<AcceptInvitation />} />
       <Route element={<RequireRole role="client" />}>

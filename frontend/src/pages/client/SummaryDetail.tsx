@@ -47,7 +47,7 @@ function Editor({ summary, onSaved }: { summary: Summary; onSaved: (s: Summary) 
       <Button onClick={save} disabled={busy}>
         {busy ? 'Kaydediliyor…' : 'Değişiklikleri kaydet'}
       </Button>
-      <p className="text-xs text-slate-500">Düzenleme özeti taslağa döndürür; yeniden onaylaman gerekir.</p>
+      <p className="text-xs text-muted">Düzenleme özeti taslağa döndürür; yeniden onaylaman gerekir.</p>
     </div>
   )
 }
@@ -77,12 +77,12 @@ export function SummaryDetail() {
   return (
     <div>
       <p className="mb-2 text-sm">
-        <Link to="/client/summaries" className="text-indigo-700 hover:underline">
+        <Link to="/client/summaries" className="link inline-flex min-h-11 items-center">
           ← Özetlerim
         </Link>
       </p>
       <PageHeader title={summary.title} actions={<Badge tone={STATUS_TONE[summary.status]}>{STATUS_LABEL[summary.status]}</Badge>} />
-      <p className="mb-4 text-xs text-slate-500">
+      <p className="mb-4 text-xs text-muted">
         {formatDate(summary.period_start)} – {formatDate(summary.period_end)} · Oluşturuldu: {formatDateTime(summary.created_at)}
       </p>
       {actionError && <Alert>{actionError}</Alert>}
@@ -99,9 +99,9 @@ export function SummaryDetail() {
           <div className="space-y-4">
             {summary.statements.map((s) => (
               <div key={s.id}>
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{s.section}</p>
-                <p className="whitespace-pre-wrap break-words text-sm text-slate-800">{s.text}</p>
-                <p className="text-xs text-slate-400">{s.source_entry_ids.length} kayda dayanıyor</p>
+                <p className="text-xs font-medium uppercase tracking-wide text-muted">{s.section}</p>
+                <p className="whitespace-pre-wrap break-words text-sm text-ink">{s.text}</p>
+                <p className="text-xs text-muted">{s.source_entry_ids.length} kayda dayanıyor</p>
               </div>
             ))}
           </div>
@@ -131,7 +131,7 @@ export function SummaryDetail() {
           )}
         </div>
       )}
-      <p className="mt-4 text-xs text-slate-500">
+      <p className="mt-4 text-xs text-muted">
         {summary.status === 'draft' && 'Bu taslak yalnızca sana görünür. Onaylamadan paylaşamazsın.'}
         {summary.status === 'approved' && 'Onayladın; henüz kimseyle paylaşılmadı.'}
         {summary.status === 'shared' && `Atanmış uzmanın bu özeti görebilir (paylaşım: ${formatDateTime(summary.shared_at ?? summary.created_at)}).`}

@@ -30,7 +30,7 @@ export function JobProgress({
       <Alert kind="success">
         <p>Özet taslağın hazır. Paylaşmadan önce gözden geçirip onaylaman gerekiyor.</p>
         {job.summary_id && (
-          <Link to={`/client/summaries/${job.summary_id}`} className="mt-2 inline-block font-medium underline">
+          <Link to={`/client/summaries/${job.summary_id}`} className="link mt-2 inline-flex min-h-11 items-center">
             Taslağı aç
           </Link>
         )}

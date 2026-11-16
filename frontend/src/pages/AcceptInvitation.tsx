@@ -35,7 +35,7 @@ export function AcceptInvitation() {
     return (
       <AuthShell title="Hesabın hazır">
         <Alert kind="success">Hesabın oluşturuldu. Şimdi giriş yapabilirsin.</Alert>
-        <Link to="/login" className="mt-4 block text-center font-medium text-indigo-700 underline">
+        <Link to="/login" className="link mt-4 inline-flex min-h-11 items-center">
           Giriş sayfasına git
         </Link>
       </AuthShell>
@@ -70,7 +70,7 @@ export function AcceptInvitation() {
           {busy ? 'Kaydediliyor…' : 'Hesabı oluştur'}
         </Button>
         <p className="text-center text-sm">
-          <Link to="/login" className="text-indigo-700 underline">
+          <Link to="/login" className="link inline-flex min-h-11 items-center">
             Giriş sayfasına dön
           </Link>
         </p>

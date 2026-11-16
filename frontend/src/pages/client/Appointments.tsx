@@ -11,8 +11,8 @@ function list(items: Appointment[]) {
       {items.map((a) => (
         <li key={a.id}>
           <Card>
-            <p className="font-medium text-slate-900">{formatDateTime(a.scheduled_at)}</p>
-            <p className="mt-1 text-sm text-slate-600">
+            <p className="font-medium text-ink">{formatDateTime(a.scheduled_at)}</p>
+            <p className="mt-1 text-sm text-ink-2">
               {APPOINTMENT_KIND_LABEL[a.kind]}
               {a.clinician_name ? ` · ${a.clinician_name}` : ''}
             </p>
@@ -35,7 +35,7 @@ export function Appointments() {
   return (
     <div>
       <PageHeader title="Randevularım" />
-      <p className="mb-4 text-sm text-slate-600">Uzmanının senin için açtığı randevular burada görünür. Değişiklik için uzmanınla konuş.</p>
+      <p className="mb-4 text-sm text-ink-2">Uzmanının senin için açtığı randevular burada görünür. Değişiklik için uzmanınla konuş.</p>
       {error && <Alert>{error}</Alert>}
       {loading ? (
         <Spinner />
@@ -44,14 +44,14 @@ export function Appointments() {
       ) : (
         <div className="space-y-6">
           <section aria-labelledby="upcoming-title">
-            <h2 id="upcoming-title" className="mb-2 text-sm font-semibold text-slate-700">
+            <h2 id="upcoming-title" className="mb-2 text-base font-semibold text-ink-2">
               Yaklaşan
             </h2>
             {upcoming.length ? list(upcoming) : <Empty>Yaklaşan randevu yok.</Empty>}
           </section>
           {past.length > 0 && (
             <section aria-labelledby="past-title">
-              <h2 id="past-title" className="mb-2 text-sm font-semibold text-slate-700">
+              <h2 id="past-title" className="mb-2 text-base font-semibold text-ink-2">
                 Geçmiş
               </h2>
               {list(past)}

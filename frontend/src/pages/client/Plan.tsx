@@ -1,9 +1,8 @@
 import { useCallback, useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
 import { errorMessage } from '../../api/client'
 import { planApi } from '../../api/endpoints'
 import type { Plan as PlanData, PlanContact, PlanContent } from '../../api/types'
-import { Alert, Badge, Button, Card, formatDateTime, PageHeader, Spinner, TextArea, TextField } from '../../components/ui'
+import { Alert, Badge, Button, Card, formatDateTime, PageHeader, Spinner, TextArea, TextField, LinkButton } from '../../components/ui'
 import { useLoad } from '../../hooks/useLoad'
 
 const LIMITS = { items: 10, itemLength: 200, note: 500, contacts: 8 }
@@ -61,7 +60,7 @@ export function PlanForm({ plan, onSaved }: { plan: PlanContent; onSaved: (p: Pl
       <TextArea label="O an ne yapacağım? (adımlar)" hint={listHint} rows={5} value={steps} onChange={(e) => setSteps(e.target.value)} />
       <TextArea label="Kendime not" hint={`En fazla ${LIMITS.note} karakter.`} maxLength={LIMITS.note} rows={3} value={note} onChange={(e) => setNote(e.target.value)} />
       <fieldset className="space-y-3">
-        <legend className="text-sm font-medium text-slate-700">Arayabileceğim kişiler</legend>
+        <legend className="text-sm font-medium text-ink-2">Arayabileceğim kişiler</legend>
         {contacts.map((c, i) => (
           <div key={i} className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
             <TextField label={`Kişi ${i + 1} adı`} maxLength={80} value={c.name} onChange={(e) => setContact(i, { name: e.target.value })} />
@@ -111,9 +110,9 @@ export function Plan() {
       <PageHeader
         title="Planım"
         actions={
-          <Link to="/client/moment" className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium hover:bg-slate-50">
+          <LinkButton to="/client/moment" variant="secondary">
             “O an” kartını aç
-          </Link>
+          </LinkButton>
         }
       />
       <Alert kind="info">
@@ -123,8 +122,8 @@ export function Plan() {
       <Card>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="font-medium text-slate-900">Uzmanınla paylaşım</h2>
-            <p className="mt-1 text-sm text-slate-600">
+            <h2 className="font-medium text-ink">Uzmanınla paylaşım</h2>
+            <p className="mt-1 text-sm text-ink-2">
               {plan.shared_at
                 ? `Atanmış uzmanın planını salt okunur görebiliyor (${formatDateTime(plan.shared_at)}). İstediğin an geri alabilirsin.`
                 : 'Plan şu an yalnızca sana görünür. İstersen atanmış uzmanınla salt okunur paylaşabilirsin.'}
@@ -143,7 +142,7 @@ export function Plan() {
             </Button>
           )}
         </div>
-        {plan.updated_at === null && <p className="mt-2 text-xs text-slate-500">Paylaşmak için önce planını kaydet.</p>}
+        {plan.updated_at === null && <p className="mt-2 text-xs text-muted">Paylaşmak için önce planını kaydet.</p>}
       </Card>
       <Card>
         <PlanForm plan={plan} onSaved={setOverride} />

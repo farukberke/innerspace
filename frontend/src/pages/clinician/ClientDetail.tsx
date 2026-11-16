@@ -12,8 +12,8 @@ function Items({ title, items }: { title: string; items: string[] }) {
   if (items.length === 0) return null
   return (
     <div className="mt-4">
-      <h3 className="text-sm font-semibold text-slate-700">{title}</h3>
-      <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-slate-800">
+      <h3 className="text-base font-semibold text-ink-2">{title}</h3>
+      <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-ink">
         {items.map((t, i) => (
           <li key={i} className="break-words">
             {t}
@@ -31,18 +31,18 @@ export function SharedPlanView({ plan }: { plan: PlanContent }) {
       <Items title="O an adımları" items={plan.moment_steps} />
       {plan.self_note && (
         <div className="mt-4">
-          <h3 className="text-sm font-semibold text-slate-700">Kendine not</h3>
-          <p className="mt-1 whitespace-pre-wrap break-words text-sm text-slate-800">{plan.self_note}</p>
+          <h3 className="text-base font-semibold text-ink-2">Kendine not</h3>
+          <p className="mt-1 whitespace-pre-wrap break-words text-sm text-ink">{plan.self_note}</p>
         </div>
       )}
       {plan.contacts.length > 0 && (
         <div className="mt-4">
-          <h3 className="text-sm font-semibold text-slate-700">Aranacak kişiler</h3>
-          <ul className="mt-1 space-y-1 text-sm text-slate-800">
+          <h3 className="text-base font-semibold text-ink-2">Aranacak kişiler</h3>
+          <ul className="mt-1 space-y-1 text-sm text-ink">
             {plan.contacts.map((c, i) => (
               <li key={i}>
                 {c.name} ·{' '}
-                <a href={telHref(c.phone)} className="text-indigo-700 hover:underline">
+                <a href={telHref(c.phone)} className="link inline-flex min-h-11 items-center">
                   {c.phone}
                 </a>
               </li>
@@ -73,7 +73,7 @@ function ClientPlan({ clientId }: { clientId: string }) {
   if (!data) return <Empty>Danışan planını seninle paylaşmadı.</Empty>
   return (
     <div>
-      <p className="text-xs text-slate-500">Salt okunur · Paylaşım: {formatDateTime(data.shared_at)} · Danışan paylaşımı geri alabilir.</p>
+      <p className="text-xs text-muted">Salt okunur · Paylaşım: {formatDateTime(data.shared_at)} · Danışan paylaşımı geri alabilir.</p>
       <SharedPlanView plan={data} />
     </div>
   )
@@ -110,7 +110,7 @@ export function ClinicianClientDetail() {
   return (
     <div className="space-y-6">
       <p className="text-sm">
-        <Link to="/clinician/clients" className="text-indigo-700 hover:underline">
+        <Link to="/clinician/clients" className="link inline-flex min-h-11 items-center">
           ← Danışanlarım
         </Link>
       </p>
@@ -121,7 +121,7 @@ export function ClinicianClientDetail() {
         </Card>
       )}
       <section aria-labelledby="appts-title">
-        <h2 id="appts-title" className="mb-2 text-lg font-semibold text-slate-900">
+        <h2 id="appts-title" className="mb-2 text-lg font-semibold text-ink">
           Randevular
         </h2>
         {(notFound || actionError) && <Alert>{actionError ?? error}</Alert>}
@@ -137,7 +137,7 @@ export function ClinicianClientDetail() {
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div>
                       <p className="font-medium">{formatDateTime(a.scheduled_at)}</p>
-                      <p className="mt-1 text-sm text-slate-600">
+                      <p className="mt-1 text-sm text-ink-2">
                         {APPOINTMENT_KIND_LABEL[a.kind]}
                       </p>
                     </div>
@@ -157,7 +157,7 @@ export function ClinicianClientDetail() {
         )}
       </section>
       <section aria-labelledby="plan-title">
-        <h2 id="plan-title" className="mb-2 text-lg font-semibold text-slate-900">
+        <h2 id="plan-title" className="mb-2 text-lg font-semibold text-ink">
           Danışanın planı
         </h2>
         <Card>

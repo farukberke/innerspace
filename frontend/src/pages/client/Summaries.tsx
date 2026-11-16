@@ -13,9 +13,9 @@ export const STATUS_LABEL: Record<SummaryStatus, string> = {
   shared: 'Paylaşıldı',
   revoked: 'Paylaşım geri alındı',
 }
-export const STATUS_TONE: Record<SummaryStatus, 'amber' | 'indigo' | 'green' | 'slate'> = {
+export const STATUS_TONE: Record<SummaryStatus, 'amber' | 'brand' | 'green' | 'slate'> = {
   draft: 'amber',
-  approved: 'indigo',
+  approved: 'brand',
   shared: 'green',
   revoked: 'slate',
 }
@@ -72,14 +72,14 @@ function GeneratePanel({ onFinished, initialAppointmentId = '' }: { onFinished: 
         </SelectField>
       )}
       {appointmentId ? (
-        <p className="text-sm text-slate-600">Dönem, bir önceki randevundan seçtiğin randevuya kadar otomatik belirlenir.</p>
+        <p className="text-sm text-ink-2">Dönem, bir önceki randevundan seçtiğin randevuya kadar otomatik belirlenir.</p>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
           <TextField label="Başlangıç tarihi" type="date" required value={start} max={end} onChange={(e) => setStart(e.target.value)} />
           <TextField label="Bitiş tarihi" type="date" required value={end} min={start} onChange={(e) => setEnd(e.target.value)} />
         </div>
       )}
-      <p className="text-xs text-slate-500">En fazla 92 günlük bir aralık seçebilirsin. Özet yalnızca sana görünen bir taslak olarak oluşturulur.</p>
+      <p className="text-xs text-muted">En fazla 92 günlük bir aralık seçebilirsin. Özet yalnızca sana görünen bir taslak olarak oluşturulur.</p>
       <Button type="submit" disabled={busy}>
         {busy ? 'Gönderiliyor…' : 'Özet taslağı oluştur'}
       </Button>
@@ -113,12 +113,12 @@ export function Summaries() {
             <li key={s.id}>
               <Card>
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <Link to={`/client/summaries/${s.id}`} className="font-medium text-indigo-700 hover:underline">
+                  <Link to={`/client/summaries/${s.id}`} className="link inline-flex min-h-11 items-center">
                     {s.title}
                   </Link>
                   <Badge tone={STATUS_TONE[s.status]}>{STATUS_LABEL[s.status]}</Badge>
                 </div>
-                <p className="mt-1 text-xs text-slate-500">
+                <p className="mt-1 text-xs text-muted">
                   {formatDate(s.period_start)} – {formatDate(s.period_end)}
                 </p>
               </Card>

@@ -71,7 +71,7 @@ export function InviteForm({
               {result.email} için davet oluşturuldu (son geçerlilik: {formatDateTime(result.expires_at)}). E-posta gönderilmiyor; aşağıdaki kodu
               kişiye ilet. Kod yalnızca bir kez gösterilir.
             </p>
-            <p className="mt-2 break-all rounded bg-white px-3 py-2 font-mono text-xs text-slate-900" data-testid="invite-token">
+            <p className="mt-2 break-all rounded bg-white px-3 py-2 font-mono text-xs text-ink" data-testid="invite-token">
               {result.token}
             </p>
           </Alert>

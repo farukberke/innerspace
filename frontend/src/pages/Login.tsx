@@ -3,21 +3,26 @@ import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { errorMessage } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
 import { HOME_BY_ROLE } from '../auth/roles'
-import { DemoBanner } from '../components/Layout'
+import { DemoBanner, SkipLink } from '../components/Layout'
 import { Alert, Button, Card, Spinner, TextField } from '../components/ui'
 
 export function AuthShell({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="min-h-screen">
+      <SkipLink />
       <DemoBanner />
-      <div className="mx-auto max-w-md px-4 py-10">
-        <h1 className="mb-1 text-center text-2xl font-semibold text-indigo-700">InnerSpace</h1>
-        <p className="mb-6 text-center text-sm text-slate-500">Seanslar arası defterin</p>
+      <main id="main" tabIndex={-1} className="mx-auto max-w-md px-4 py-10 focus:outline-none sm:py-16">
+        <p className="mb-1 text-center">
+          <Link to="/" className="font-display text-3xl font-semibold text-brand-700">
+            InnerSpace
+          </Link>
+        </p>
+        <p className="mb-8 text-center text-base text-ink-2">Seanslar arası defterin</p>
         <Card>
-          <h2 className="mb-4 text-lg font-semibold">{title}</h2>
+          <h1 className="mb-5 text-2xl font-semibold">{title}</h1>
           {children}
         </Card>
-      </div>
+      </main>
     </div>
   )
 }
@@ -62,9 +67,9 @@ export function Login() {
         <Button type="submit" className="w-full" disabled={busy}>
           {busy ? 'Giriş yapılıyor…' : 'Giriş yap'}
         </Button>
-        <p className="text-center text-sm text-slate-600">
+        <p className="text-center text-sm text-ink-2">
           Davet aldın mı?{' '}
-          <Link to="/accept-invitation" className="font-medium text-indigo-700 underline">
+          <Link to="/accept-invitation" className="link inline-flex min-h-11 items-center">
             Daveti kabul et
           </Link>
         </p>

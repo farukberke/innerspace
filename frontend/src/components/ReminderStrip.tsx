@@ -21,10 +21,10 @@ export function ReminderStrip() {
         return (
           <li
             key={`${r.kind}-${r.appointment_id}`}
-            className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-indigo-50 px-4 py-3 text-sm text-indigo-900"
+            className="flex flex-wrap items-center justify-between gap-2 rounded-soft bg-brand-50 px-4 py-3 text-sm text-brand-900"
           >
             <span>{r.message}</span>
-            <Link to={action.to} className="font-medium text-indigo-700 underline-offset-2 hover:underline">
+            <Link to={action.to} className="link">
               {action.label}
             </Link>
           </li>
