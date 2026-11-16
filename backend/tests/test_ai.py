@@ -229,7 +229,22 @@ BAD_TEXTS = [
 ]
 
 
-@pytest.mark.parametrize("text", BAD_TEXTS)
+def _obfuscate(text: str) -> list[str]:
+    """Variants hiding the text from naive matching: invisible characters and look-alikes."""
+    mid = len(text) // 2
+    return [
+        text.replace(" ", "​ "),
+        text[:mid] + "­" + text[mid:],
+        text.replace("o", "о").replace("e", "е"),  # Cyrillic o / e
+        "﻿".join(text),
+    ]
+
+
+OBFUSCATED_BAD_TEXTS = [v for t in BAD_TEXTS for v in _obfuscate(t)]
+ALL_BAD_TEXTS = BAD_TEXTS + OBFUSCATED_BAD_TEXTS
+
+
+@pytest.mark.parametrize("text", ALL_BAD_TEXTS)
 async def test_guardrail_rejects_diagnosis_and_treatment_advice(
     http: AsyncClient, acting, llm: FakeLlm, w: World, db_session: AsyncSession, text: str
 ) -> None:
@@ -333,7 +348,7 @@ async def test_edit_returns_to_draft_and_needs_new_approval(
     assert (await http.post(f"{API}/summaries/{sid}/share")).status_code == 409
 
 
-@pytest.mark.parametrize("text", BAD_TEXTS)
+@pytest.mark.parametrize("text", ALL_BAD_TEXTS)
 async def test_edited_text_passes_the_same_guardrails(
     http: AsyncClient, acting, llm: FakeLlm, w: World, text: str
 ) -> None:
@@ -423,6 +438,21 @@ async def test_crisis_in_after_session_text_skips_llm(
     ],
 )
 def test_crisis_detector_matches_turkish_and_english(text: str) -> None:
+    assert contains_crisis_language(text)
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "inti​har",
+        "kendimi ­öldürmek istiyorum",
+        "I want to d⁠ie",
+        "kill my​self",
+        "I want to diе",
+        "suіcide",
+    ],
+)
+def test_crisis_detector_sees_through_invisible_characters(text: str) -> None:
     assert contains_crisis_language(text)
 
 
