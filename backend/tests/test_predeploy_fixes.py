@@ -318,3 +318,34 @@ async def test_invitation_does_not_reveal_emails_registered_in_other_orgs(
 async def test_same_org_duplicate_is_still_reported(http: AsyncClient, acting, w) -> None:
     acting.user = w.admin_a
     assert (await _invite(http, email=w.client_a2.email, role="client")).status_code == 409
+
+
+# --- Review follow-ups -------------------------------------------------------------------
+
+
+def test_production_requires_explicit_trusted_proxy_hops() -> None:
+    base = {
+        "app_env": "production",
+        "database_url": "postgresql+asyncpg://x/y",
+        "jwt_secret": TEST_JWT_SECRET,
+        "rate_limit_backend": "redis",
+    }
+    with pytest.raises(ValidationError, match="TRUSTED_PROXY_HOPS"):
+        Settings(**base)
+    assert Settings(**base, trusted_proxy_hops=0).trusted_proxy_hops == 0
+    assert Settings(**base, trusted_proxy_hops=1).trusted_proxy_hops == 1
+
+
+async def test_logout_still_revokes_when_limiter_is_down(
+    make_client, http: AsyncClient, w, db_session: AsyncSession
+) -> None:
+    tokens = await _tokens(http, w)
+    async with make_client() as client:
+        client._transport.app.state.rate_limiter = RateLimiter(  # type: ignore[attr-defined]
+            _Broken(), fail_closed_scopes=FAIL_CLOSED_SCOPES
+        )
+        out = await client.post(
+            f"{API}/auth/logout", json={"refresh_token": tokens["refresh_token"]}
+        )
+    assert out.status_code == 204
+    assert (await _refresh(http, tokens["refresh_token"])).status_code == 401

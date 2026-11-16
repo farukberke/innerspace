@@ -52,6 +52,7 @@ class Settings(BaseSettings):
     rate_limit_login_ip: str = "30/minute"
     rate_limit_login_email: str = "8/15minute"  # brute force on one account, from any IP
     rate_limit_refresh: str = "30/minute"
+    rate_limit_logout: str = "30/minute"  # fail-open: logout must still revoke when Redis is down
     rate_limit_accept_invitation: str = "10/minute"
     rate_limit_generate: str = "10/hour"  # per user: POST /summaries/generate
     rate_limit_after_session: str = "30/hour"  # per user: POST /after-session-notes
@@ -87,6 +88,7 @@ class Settings(BaseSettings):
         "rate_limit_login_ip",
         "rate_limit_login_email",
         "rate_limit_refresh",
+        "rate_limit_logout",
         "rate_limit_accept_invitation",
         "rate_limit_generate",
         "rate_limit_after_session",
@@ -117,6 +119,12 @@ class Settings(BaseSettings):
     def _production_needs_shared_rate_limiter(self) -> "Settings":
         if self.app_env == "production" and self.rate_limit_backend == "memory":
             raise ValueError("RATE_LIMIT_BACKEND=memory is not allowed when APP_ENV=production")
+        if self.app_env == "production" and "trusted_proxy_hops" not in self.model_fields_set:
+            raise ValueError(
+                "TRUSTED_PROXY_HOPS must be set explicitly when APP_ENV=production "
+                "(Render: 1; 0 only if there is no proxy): the default would put all clients "
+                "in one rate-limit bucket"
+            )
         return self
 
     @property

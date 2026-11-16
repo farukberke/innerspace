@@ -59,7 +59,7 @@ async def refresh(
 @router.post(
     "/logout",
     status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[Depends(limit_per_ip("refresh"))],
+    dependencies=[Depends(limit_per_ip("logout"))],
 )
 async def logout(
     session: SessionDep, settings: SettingsDep, data: Annotated[RefreshRequest, Body()]
