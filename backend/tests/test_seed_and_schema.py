@@ -14,6 +14,7 @@ from app.models import (
     AfterSessionNote,
     Appointment,
     AuditLog,
+    CareAssignment,
     Entry,
     EntryKind,
     LlmUsage,
@@ -43,6 +44,16 @@ async def test_seed_is_idempotent_and_consistent(db_session: AsyncSession) -> No
     )
     assert mismatched == 0
     assert await db_session.scalar(select(func.count(Appointment.id))) > 0
+
+    # Ayşe has one pre-written shared summary tied to her next appointment, with citations.
+    summary = await db_session.scalar(select(Summary))
+    assert summary is not None and summary.status == "shared" and summary.topics
+    assert summary.appointment_id is not None and summary.shared_at is not None
+    assignment_at = await db_session.scalar(
+        select(CareAssignment.created_at).where(CareAssignment.client_id == summary.client_id)
+    )
+    assert summary.shared_at > assignment_at
+    assert await db_session.scalar(select(func.count(SummaryCitation.entry_id))) > 0
 
 
 def test_models_match_migrations(alembic_config: Config, migrated_db: None) -> None:

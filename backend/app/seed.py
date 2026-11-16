@@ -30,10 +30,15 @@ from app.models import (
     Entry,
     EntryKind,
     Organization,
+    Summary,
+    SummaryCitation,
+    SummaryStatement,
+    SummaryStatus,
     SupportPlan,
     User,
     UserRole,
 )
+from app.services.summaries import render_body
 
 
 @dataclass(frozen=True)
@@ -175,6 +180,70 @@ def _client_entries(rng: random.Random, client: User, now: datetime) -> list[Ent
     return entries
 
 
+def _demo_summary(
+    client: User,
+    entries: list[Entry],
+    previous: Appointment,
+    upcoming: Appointment,
+    shared_at: datetime,
+) -> tuple[Summary, list[tuple[SummaryStatement, list[Entry]]]]:
+    """A fixed, pre-written shared summary (no LLM call). Each statement cites the real seeded
+    entries it describes; counts are computed from those entries so the text stays accurate."""
+    start = previous.scheduled_at
+    window = [e for e in entries if start <= e.occurred_at <= shared_at]
+    by_kind = {k: [e for e in window if e.kind == k] for k in EntryKind}
+    drafts: list[tuple[str, str, list[Entry]]] = []
+    if panics := by_kind[EntryKind.PANIC]:
+        drafts.append(
+            (
+                "Atak kayıtları",
+                f"Bu dönemde {len(panics)} atak kaydı var; ortalama şiddet "
+                f"{sum(e.details['intensity'] for e in panics) / len(panics):.1f}/10 olarak "
+                "işaretlenmiş.",
+                panics,
+            )
+        )
+    if quicks := by_kind[EntryKind.QUICK]:
+        drafts.append(
+            ("Günlük notlar", "Günlük notlarda uyku, gerginlik ve yürüyüş geçiyor.", quicks)
+        )
+    if avoids := by_kind[EntryKind.AVOIDANCE]:
+        drafts.append(
+            (
+                "Kaçınma",
+                f"{len(avoids)} durumda kaçınma kaydı tutulmuş.",
+                avoids,
+            )
+        )
+    meds = by_kind[EntryKind.MEDICATION]
+    drafts.append(
+        (
+            "İlaç kaydı",
+            f"{len(meds)} günlük ilaç kaydında "
+            f"{sum(1 for e in meds if e.details['taken'])} gün ilacın alındığı işaretlenmiş.",
+            meds,
+        )
+    )
+    statements = [
+        (SummaryStatement(position=i, section=sec, text=text), cited)
+        for i, (sec, text, cited) in enumerate(drafts)
+    ]
+    summary = Summary(
+        organization_id=client.organization_id,
+        client_id=client.id,
+        title="Seans öncesi özet",
+        body=render_body([st for st, _ in statements]),
+        status=SummaryStatus.SHARED,
+        period_start=start.date(),
+        period_end=shared_at.date(),
+        approved_at=shared_at,
+        shared_at=shared_at,
+        appointment_id=upcoming.id,
+        topics=["Metroda yaşadığım atak", "Uyku düzenim"],
+    )
+    return summary, statements
+
+
 async def seed(session: AsyncSession, *, password: str, now: datetime | None = None) -> list[str]:
     """Creates missing demo organizations (all users share `password`). Returns created slugs."""
     password_hash = await hash_password(password)
@@ -213,34 +282,41 @@ async def seed(session: AsyncSession, *, password: str, now: datetime | None = N
                     organization_id=org.id, clinician_id=assigned.id, client_id=client.id
                 )
             )
-            session.add_all(_client_entries(rng, client, now))
+            entries = _client_entries(rng, client, now)
+            session.add_all(entries)
             next_session = (now + timedelta(days=rng.randint(1, 6))).replace(hour=14, minute=0)
-            session.add_all(
-                [
-                    Appointment(
-                        organization_id=org.id,
-                        client_id=client.id,
-                        clinician_id=assigned.id,
-                        created_by_id=assigned.id,
-                        kind=AppointmentKind.THERAPY,
-                        scheduled_at=next_session - timedelta(days=7),
-                    ),
-                    Appointment(
-                        organization_id=org.id,
-                        client_id=client.id,
-                        clinician_id=assigned.id,
-                        created_by_id=assigned.id,
-                        kind=AppointmentKind.THERAPY,
-                        scheduled_at=next_session,
-                    ),
-                ]
-            )
+            appointments = [
+                Appointment(
+                    organization_id=org.id,
+                    client_id=client.id,
+                    clinician_id=assigned.id,
+                    created_by_id=assigned.id,
+                    kind=AppointmentKind.THERAPY,
+                    scheduled_at=when,
+                )
+                for when in (next_session - timedelta(days=7), next_session)
+            ]
+            session.add_all(appointments)
             plan = _demo_plan(client)
             if client.email == AYSE_EMAIL:
                 # Taken now (not `now`): sharing only counts if it is after the assignment,
                 # whose timestamp is the start of this transaction.
                 plan.shared_at = datetime.now(UTC)
             session.add(plan)
+            if client.email == AYSE_EMAIL:
+                await session.flush()  # entry/appointment ids are needed for the citations
+                summary, statements = _demo_summary(
+                    client, entries, *appointments, shared_at=datetime.now(UTC)
+                )
+                session.add(summary)
+                await session.flush()
+                for statement, cited in statements:
+                    statement.summary_id = summary.id
+                    session.add(statement)
+                    await session.flush()
+                    session.add_all(
+                        SummaryCitation(statement_id=statement.id, entry_id=e.id) for e in cited
+                    )
         created.append(spec.slug)
 
     await session.commit()

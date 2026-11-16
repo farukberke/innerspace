@@ -85,6 +85,7 @@ export function ClinicianClientDetail() {
   const load = useCallback(() => clinicianApi.appointments(id), [id])
   const { data, error, loading, reload } = useLoad(load)
   const [form, setForm] = useState<'new' | Appointment | null>(null)
+  const [now] = useState(() => Date.now())
   const [actionError, setActionError] = useState<string | null>(null)
   const name = clients.data?.find((c) => c.id === id)?.display_name ?? 'Danışan'
 
@@ -105,6 +106,33 @@ export function ClinicianClientDetail() {
       setActionError(errorMessage(err))
     }
   }
+
+  const upcoming = (data ?? []).filter((a) => new Date(a.scheduled_at).getTime() >= now).reverse()
+  const past = (data ?? []).filter((a) => new Date(a.scheduled_at).getTime() < now)
+
+  // Past appointments are history: only upcoming ones can be changed or cancelled.
+  const list = (items: Appointment[], editable: boolean) => (
+    <ul className="space-y-3">
+      {items.map((a) => (
+        <li key={a.id}>
+          <Card>
+            <p className="font-medium">{formatDateTime(a.scheduled_at)}</p>
+            <p className="mt-1 text-sm text-ink-2">{APPOINTMENT_KIND_LABEL[a.kind]}</p>
+            {editable && (
+              <div className="mt-3 flex gap-2">
+                <Button variant="secondary" onClick={() => setForm(a)}>
+                  Değiştir
+                </Button>
+                <Button variant="danger" onClick={() => cancel(a)}>
+                  İptal et
+                </Button>
+              </div>
+            )}
+          </Card>
+        </li>
+      ))}
+    </ul>
+  )
 
   const notFound = error !== null && !data
   return (
@@ -130,30 +158,18 @@ export function ClinicianClientDetail() {
         ) : data && data.length === 0 ? (
           <Empty>Henüz randevu yok.</Empty>
         ) : (
-          <ul className="space-y-3">
-            {data?.map((a) => (
-              <li key={a.id}>
-                <Card>
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div>
-                      <p className="font-medium">{formatDateTime(a.scheduled_at)}</p>
-                      <p className="mt-1 text-sm text-ink-2">
-                        {APPOINTMENT_KIND_LABEL[a.kind]}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="mt-3 flex gap-2">
-                    <Button variant="secondary" onClick={() => setForm(a)}>
-                      Değiştir
-                    </Button>
-                    <Button variant="danger" onClick={() => cancel(a)}>
-                      İptal et
-                    </Button>
-                  </div>
-                </Card>
-              </li>
-            ))}
-          </ul>
+          <div className="space-y-6">
+            <div>
+              <h3 className="mb-2 text-base font-semibold text-ink-2">Yaklaşan</h3>
+              {upcoming.length ? list(upcoming, true) : <Empty>Yaklaşan randevu yok.</Empty>}
+            </div>
+            {past.length > 0 && (
+              <div>
+                <h3 className="mb-2 text-base font-semibold text-ink-2">Geçmiş</h3>
+                {list(past, false)}
+              </div>
+            )}
+          </div>
         )}
       </section>
       <section aria-labelledby="plan-title">

@@ -9,6 +9,17 @@
 
 **Live demo:** https://innerspace-web.onrender.com (Turkish UI; demo accounts available on request).
 
+## Screenshots
+
+![InnerSpace demo: a client reviews an AI summary and shares it with their clinician](assets/screenshots/demo.gif)
+
+| | |
+|---|---|
+| ![Landing page](assets/screenshots/landing.png) | ![Client view of a shared, source-cited summary](assets/screenshots/client-summary.png) |
+| ![Clinician view of a summary the client chose to share](assets/screenshots/clinician-summary.png) | ![Client support plan editor](assets/screenshots/client-plan.png) |
+| ![Client "in the moment" card with large steps and contacts](assets/screenshots/client-moment.png) | ![Clinician view of one client: appointments and shared plan](assets/screenshots/clinician-client-detail.png) |
+| ![Clinic admin user management](assets/screenshots/admin-users.png) | <img src="assets/screenshots/client-moment-mobile.png" alt="In the moment card on a phone-sized screen" width="240"> |
+
 ## Features
 
 **Client**

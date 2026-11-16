@@ -23,10 +23,13 @@ export function MomentCard({ plan }: { plan: PlanContent | null }) {
           <h2 id="moment-steps" className="text-2xl font-semibold">
             Şimdi yapacaklarım
           </h2>
-          <ol className="mt-3 list-decimal space-y-3 pl-7 text-3xl leading-snug sm:text-4xl">
+          <ol className="mt-3 space-y-3 text-3xl leading-snug sm:text-4xl">
             {plan.moment_steps.map((s, i) => (
-              <li key={i} className="break-words">
-                {s}
+              <li key={i} className="flex gap-3">
+                <span aria-hidden className="shrink-0 tabular-nums">
+                  {i + 1}.
+                </span>
+                <span className="min-w-0 break-words">{s}</span>
               </li>
             ))}
           </ol>

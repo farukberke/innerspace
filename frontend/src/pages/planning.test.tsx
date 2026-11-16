@@ -171,6 +171,21 @@ describe('clinician client detail', () => {
     await vi.waitFor(() => expect(calls.some((c) => c.key === 'DELETE /clinician/appointments/a1')).toBe(true))
   })
 
+  it('separates upcoming and past appointments and only lets upcoming ones be changed', async () => {
+    mockFetch({
+      'GET /clinician/clients': { body: [] },
+      'GET /clinician/clients/c1/appointments': {
+        body: [appt({ id: 'a1' }), appt({ id: 'a2', scheduled_at: past })],
+      },
+      'GET /clinician/clients/c1/plan': { status: 404, body: { detail: 'Plan not found' } },
+    })
+    renderClientDetail()
+    expect(await screen.findByRole('heading', { name: 'Yaklaşan' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Geçmiş' })).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: 'Değiştir' })).toHaveLength(1)
+    expect(screen.getAllByRole('button', { name: 'İptal et' })).toHaveLength(1)
+  })
+
   it('says so when the client has not shared the plan', async () => {
     mockFetch({
       'GET /clinician/clients': { body: [] },
