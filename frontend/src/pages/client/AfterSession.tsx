@@ -2,6 +2,7 @@ import { useCallback, useState, type FormEvent } from 'react'
 import { errorMessage } from '../../api/client'
 import { afterSessionApi } from '../../api/endpoints'
 import type { AfterSessionNote, CrisisInfo } from '../../api/types'
+import { AiDisclaimer } from '../../components/AiDisclaimer'
 import { CrisisScreen } from '../../components/CrisisScreen'
 import { Alert, Button, Card, Empty, formatDateTime, PageHeader, Spinner, TextArea } from '../../components/ui'
 import { useLoad } from '../../hooks/useLoad'
@@ -93,6 +94,9 @@ export function AfterSession() {
                 <Section title="Konuştuklarımız" items={n.discussed} />
                 <Section title="Deneyeceklerim" items={n.to_try} />
                 <Section title="Sonraki seansa sorularım" items={n.questions} />
+                <div className="mt-3">
+                  <AiDisclaimer audience="client" kind="note" />
+                </div>
               </Card>
             </li>
           ))}

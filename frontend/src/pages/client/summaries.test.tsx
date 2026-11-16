@@ -107,6 +107,23 @@ describe('crisis screen', () => {
     await u.click(screen.getByRole('button', { name: /Notu düzenle/ }))
     expect(await screen.findByRole('alert')).toHaveTextContent('Sabit kriz mesajı')
   })
+
+  it('shows the AI disclaimer on a structured after-session note', async () => {
+    mockFetch({
+      'GET /after-session-notes': {
+        body: [
+          { id: 'n1', created_at: '2026-11-15T10:00:00Z', discussed: ['Uyku'], to_try: [], questions: [] },
+        ],
+      },
+    })
+    render(
+      <MemoryRouter>
+        <AfterSession />
+      </MemoryRouter>,
+    )
+    expect(await screen.findByText('Uyku')).toBeInTheDocument()
+    expect(screen.getByTestId('ai-disclaimer')).toHaveTextContent('Bu not, kendi yazdığından AI ile düzenlenmiştir.')
+  })
 })
 
 const draft: Summary = {
