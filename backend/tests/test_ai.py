@@ -237,6 +237,9 @@ def _obfuscate(text: str) -> list[str]:
         text[:mid] + "­" + text[mid:],
         text.replace("o", "о").replace("e", "е"),  # Cyrillic o / e
         "﻿".join(text),
+        text[:mid] + "️" + text[mid:],
+        text[:mid] + "͏" + text[mid:],
+        text.replace("o", "ο"),  # Greek omicron
     ]
 
 
@@ -450,6 +453,9 @@ def test_crisis_detector_matches_turkish_and_english(text: str) -> None:
         "kill my​self",
         "I want to diе",
         "suіcide",
+        "inti️har",
+        "I don’t want to live",
+        "I donʼt want to live",
     ],
 )
 def test_crisis_detector_sees_through_invisible_characters(text: str) -> None:
@@ -673,3 +679,14 @@ async def test_every_call_records_usage_without_content(
     assert {c.name for c in LlmUsage.__table__.columns}.isdisjoint(
         {"prompt", "content", "text", "output", "body"}
     )
+
+
+async def test_crisis_with_typographic_apostrophe_skips_llm(
+    http: AsyncClient, acting, llm: FakeLlm, w: World
+) -> None:
+    script = Script(after_output(discussed=["x"]))
+    acting.user = w.client
+    llm.model = script.model
+    response = await http.post(f"{API}/after-session-notes", json={"text": "I don’t want to live"})
+    assert response.status_code == 200 and response.json()["crisis"] is True
+    assert script.requests == 0

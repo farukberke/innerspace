@@ -18,8 +18,25 @@ _HOMOGLYPHS = str.maketrans(
         "н": "h",
         "в": "b",
         "ѕ": "s",
+        # Greek look-alikes
+        "ο": "o",
+        "ι": "i",
+        "α": "a",
+        "ε": "e",
+        "ν": "v",
+        "κ": "k",
+        "ρ": "p",
+        "τ": "t",
+        # Typographic apostrophes
+        "‘": "'",
+        "’": "'",
+        "ʼ": "'",
+        "′": "'",
     }
 )
+
+# Nonspacing/enclosing marks (accents, variation selectors, U+034F...) and format characters.
+_DROPPED_CATEGORIES = {"Mn", "Me", "Cf"}
 
 
 def fold(text: str) -> str:
@@ -30,9 +47,5 @@ def fold(text: str) -> str:
     "ÖLMEK", "ölmek" and "olmek" all fold to "olmek"; "te​shis" folds to "teshis".
     """
     decomposed = unicodedata.normalize("NFKD", text.replace("İ", "I").replace("ı", "i"))
-    kept = "".join(
-        ch
-        for ch in decomposed
-        if not unicodedata.combining(ch) and unicodedata.category(ch) != "Cf"
-    )
+    kept = "".join(ch for ch in decomposed if unicodedata.category(ch) not in _DROPPED_CATEGORIES)
     return " ".join(kept.lower().translate(_HOMOGLYPHS).split())
