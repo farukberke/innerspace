@@ -2,7 +2,7 @@ import { useId, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactN
 import { Link, type LinkProps } from 'react-router-dom'
 
 const inputCls =
-  'mt-1 block min-h-11 w-full rounded-soft border border-line-strong bg-surface px-3 py-2 text-base text-ink placeholder:text-muted focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-200 disabled:bg-sunk aria-[invalid=true]:border-danger-600'
+  'mt-1.5 block min-h-12 w-full rounded-soft border border-line-strong bg-surface px-3 py-2 text-base text-ink placeholder:text-muted focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-200 disabled:bg-sunk aria-[invalid=true]:border-danger-600'
 
 type Variant = 'primary' | 'secondary' | 'danger' | 'ghost'
 
@@ -10,11 +10,11 @@ type Variant = 'primary' | 'secondary' | 'danger' | 'ghost'
 export function buttonCls(variant: Variant = 'primary', className = ''): string {
   const styles: Record<Variant, string> = {
     primary: 'bg-brand-600 text-white hover:bg-brand-700',
-    secondary: 'border border-line-strong bg-surface text-ink hover:bg-sunk',
+    secondary: 'border border-ink/25 bg-surface text-ink hover:border-ink/50 hover:bg-sunk',
     danger: 'bg-danger-600 text-white hover:bg-danger-700',
     ghost: 'text-brand-700 hover:bg-brand-50',
   }
-  return `btn inline-flex min-h-11 items-center justify-center rounded-soft px-4 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50 ${styles[variant]} ${className}`
+  return `btn inline-flex min-h-11 items-center justify-center gap-2 rounded-soft px-4 py-2 text-[0.9375rem] font-bold disabled:cursor-not-allowed disabled:opacity-50 ${styles[variant]} ${className}`
 }
 
 export function Button({
@@ -39,7 +39,7 @@ export function TextField({ label, hint, ...props }: FieldProps & InputHTMLAttri
   const id = useId()
   return (
     <div>
-      <label htmlFor={id} className="block text-sm font-semibold text-ink">
+      <label htmlFor={id} className="block text-[0.9375rem] font-semibold text-ink">
         {label}
       </label>
       <input id={id} {...props} className={inputCls} aria-describedby={hint ? `${id}-hint` : undefined} />
@@ -56,7 +56,7 @@ export function TextArea({ label, hint, ...props }: FieldProps & TextareaHTMLAtt
   const id = useId()
   return (
     <div>
-      <label htmlFor={id} className="block text-sm font-semibold text-ink">
+      <label htmlFor={id} className="block text-[0.9375rem] font-semibold text-ink">
         {label}
       </label>
       <textarea id={id} rows={4} {...props} className={inputCls} aria-describedby={hint ? `${id}-hint` : undefined} />
@@ -73,7 +73,7 @@ export function SelectField({ label, children, ...props }: FieldProps & SelectHT
   const id = useId()
   return (
     <div>
-      <label htmlFor={id} className="block text-sm font-semibold text-ink">
+      <label htmlFor={id} className="block text-[0.9375rem] font-semibold text-ink">
         {label}
       </label>
       <select id={id} {...props} className={inputCls}>
@@ -110,31 +110,58 @@ export function Alert({ kind = 'error', children }: { kind?: 'error' | 'info' | 
 
 export function Card({ children, className = '', interactive = false }: { children: ReactNode; className?: string; interactive?: boolean }) {
   return (
-    <div className={`rounded-soft-lg border border-line bg-surface p-4 sm:p-5 ${interactive ? 'lift hover:border-line-strong' : ''} ${className}`}>
+    <div
+      className={`rounded-soft-lg border border-line bg-surface p-4 sm:p-5 ${interactive ? 'transition-colors hover:border-ink/40' : ''} ${className}`}
+    >
       {children}
     </div>
   )
 }
 
-export function PageHeader({ title, actions }: { title: string; actions?: ReactNode }) {
+export function PageHeader({ title, lede, actions }: { title: string; lede?: ReactNode; actions?: ReactNode }) {
   return (
-    <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-      <h1 className="text-2xl font-semibold text-ink sm:text-3xl">{title}</h1>
-      <div className="flex flex-wrap gap-2">{actions}</div>
+    <div className="mb-6 flex flex-wrap items-end justify-between gap-x-6 gap-y-3 sm:mb-8">
+      <div className="min-w-0">
+        <h1 className="text-[2rem] leading-[1.05] text-ink sm:text-[2.75rem]">{title}</h1>
+        {lede && <p className="mt-2 max-w-[60ch] text-base text-ink-2">{lede}</p>}
+      </div>
+      {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
     </div>
   )
 }
 
 export function Spinner() {
   return (
-    <p role="status" className="py-10 text-center text-base text-muted">
+    <p role="status" className="flex items-center justify-center gap-2 py-12 text-base text-muted">
+      <span aria-hidden className="inline-flex gap-1">
+        <span className="h-2 w-2 animate-pulse rounded-full bg-attack" />
+        <span className="h-2 w-2 animate-pulse rounded-full bg-sleep [animation-delay:150ms]" />
+        <span className="h-2 w-2 animate-pulse rounded-full bg-brand-600 [animation-delay:300ms]" />
+      </span>
       Yükleniyor…
     </p>
   )
 }
 
-export function Empty({ children }: { children: ReactNode }) {
-  return <p className="rounded-soft border border-dashed border-line-strong px-4 py-10 text-center text-base text-muted">{children}</p>
+/** An empty state: what is missing, why it matters, and the next step. The composition of
+ *  marks is the product's own illustration language. */
+export function Empty({ title, children, action }: { title?: string; children: ReactNode; action?: ReactNode }) {
+  return (
+    <div className="flex flex-col items-start gap-4 rounded-soft-lg border border-dashed border-line-strong bg-surface/60 px-5 py-8 sm:flex-row sm:items-center sm:gap-6 sm:px-8">
+      <svg viewBox="0 0 72 48" width="72" height="48" aria-hidden className="shrink-0">
+        <rect x="2" y="20" width="10" height="26" rx="1.5" fill="var(--color-sleep)" opacity=".35" />
+        <rect x="16" y="12" width="10" height="34" rx="1.5" fill="var(--color-sleep)" opacity=".35" />
+        <circle cx="45" cy="16" r="10" fill="none" stroke="var(--color-line-strong)" strokeWidth="2" strokeDasharray="3 3" />
+        <rect x="60" y="34" width="10" height="12" rx="1.5" fill="var(--color-line-strong)" opacity=".6" />
+        <path d="M0 46.5h72" stroke="var(--color-ink)" strokeWidth="1" />
+      </svg>
+      <div className="min-w-0">
+        {title && <p className="text-lg font-bold text-ink">{title}</p>}
+        <div className="mt-1 max-w-[56ch] text-base text-ink-2">{children}</div>
+        {action && <div className="mt-4">{action}</div>}
+      </div>
+    </div>
+  )
 }
 
 export function Badge({ children, tone = 'slate' }: { children: ReactNode; tone?: 'slate' | 'brand' | 'green' | 'amber' | 'rose' }) {
@@ -142,10 +169,22 @@ export function Badge({ children, tone = 'slate' }: { children: ReactNode; tone?
     slate: 'bg-sunk text-ink-2',
     brand: 'bg-brand-100 text-brand-800',
     green: 'bg-ok-100 text-ok-800',
-    amber: 'bg-warn-100 text-warn-800',
+    amber: 'bg-warn-100 text-warn-900',
     rose: 'bg-danger-100 text-danger-800',
   }[tone]
-  return <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${styles}`}>{children}</span>
+  return <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[0.8125rem] font-semibold ${styles}`}>{children}</span>
+}
+
+/** "Back to …" link above a detail page. */
+export function BackLink({ to, children }: { to: string; children: ReactNode }) {
+  return (
+    <Link to={to} className="mb-3 inline-flex min-h-11 items-center gap-2 text-[0.9375rem] font-semibold text-brand-700 hover:text-brand-900">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" aria-hidden>
+        <path d="M19 12H5M11 6l-6 6 6 6" />
+      </svg>
+      {children}
+    </Link>
+  )
 }
 
 export function formatDate(iso: string | null): string {
@@ -155,4 +194,24 @@ export function formatDate(iso: string | null): string {
 
 export function formatDateTime(iso: string): string {
   return new Date(iso).toLocaleString('tr-TR', { dateStyle: 'medium', timeStyle: 'short' })
+}
+
+export function formatShortDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })
+}
+
+/** Whole calendar days from `now` to `iso` (0 = today, 1 = tomorrow), in local time. */
+export function calendarDaysUntil(iso: string, now: Date = new Date()): number {
+  const a = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const t = new Date(iso)
+  const b = new Date(t.getFullYear(), t.getMonth(), t.getDate())
+  return Math.round((b.getTime() - a.getTime()) / 86400000)
+}
+
+export function relativeDay(iso: string, now: Date = new Date()): string {
+  const n = calendarDaysUntil(iso, now)
+  if (n === 0) return 'bugün'
+  if (n === 1) return 'yarın'
+  if (n === -1) return 'dün'
+  return n > 0 ? `${n} gün sonra` : `${-n} gün önce`
 }

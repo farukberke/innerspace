@@ -107,6 +107,7 @@ describe('konuşmak istediğim konular', () => {
 
   it('is shown to the clinician only when the shared summary has topics', async () => {
     const shared: SharedSummary = {
+      is_new: false,
       id: 's1',
       client_id: 'c1',
       title: 'Özet',
@@ -169,6 +170,7 @@ describe('AI ibaresi', () => {
 
   it('is shown on the clinician shared summary', async () => {
     const shared: SharedSummary = {
+      is_new: false,
       id: 's1',
       client_id: 'c1',
       title: 'Özet',

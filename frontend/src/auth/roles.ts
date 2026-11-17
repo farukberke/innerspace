@@ -1,7 +1,7 @@
 import type { UserRole } from '../api/types'
 
 export const HOME_BY_ROLE: Record<UserRole, string> = {
-  client: '/client/entries',
+  client: '/client/home',
   clinician: '/clinician/clients',
   org_admin: '/admin/users',
 }

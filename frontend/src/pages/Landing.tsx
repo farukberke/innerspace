@@ -1,86 +1,87 @@
-import { Navigate } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { HOME_BY_ROLE } from '../auth/roles'
-import { DemoBanner, SkipLink } from '../components/Layout'
-import { Badge, buttonCls, LinkButton, Spinner } from '../components/ui'
+import { ArrowIcon } from '../components/icons'
+import { DemoBanner, Logo, SkipLink } from '../components/Layout'
+import { Mark, type MarkKind } from '../components/Mark'
+import { buttonCls, Spinner } from '../components/ui'
 
 const REPO_URL = 'https://github.com/farukberke/innerspace'
 
-/** Static, synthetic-data rendering of the product's own summary screen. Not interactive. */
-function AppFrame() {
-  const statements = [
-    { section: 'Uyku', text: 'Son iki haftada 5 gece uykuya dalmakta zorlandığını yazdın.', sources: 5 },
-    { section: 'Kaygı', text: 'Toplantı öncesinde 2 kez göğüste sıkışma hissi kaydettin.', sources: 2 },
-    { section: 'Seansa taşımak istediğin', text: 'İşteki sunum kaygısı hakkında konuşmak istediğini not ettin.', sources: 1 },
-  ]
+/** Synthetic rendering of the product's own surfaces. Not interactive, labelled as an example. */
+const SAMPLE_DAYS: { sleep: number; attacks: number[] }[] = [
+  [7, []], [6.5, []], [5, [6]], [7, []], [7.5, []], [6, []], [5.5, [8]], [6, []], [7, []], [7.5, []],
+  [6.5, []], [7, []], [5, [5]], [6.5, []], [7, []], [8, []], [7, []], [6.5, []], [7, []], [7.5, []], [7, []],
+].map(([sleep, attacks]) => ({ sleep: sleep as number, attacks: attacks as number[] }))
+
+function ProductSample() {
   return (
-    <div
-      role="group"
-      aria-label="Uygulama arayüzü örneği, sentetik veri"
-      className="rounded-soft-lg border border-line-strong bg-surface p-4 sm:p-6"
-    >
-      <p className="mb-4 text-sm font-semibold text-muted">Özetlerim · örnek ekran</p>
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <p className="font-display text-xl font-semibold">Seans öncesi özet</p>
-        <Badge tone="green">Paylaşıldı</Badge>
+    <div role="group" aria-label="Uygulama ekranı örneği, sentetik veri" className="rounded-soft-lg bg-surface p-5 text-ink shadow-[0_24px_60px_-20px_rgba(10,16,48,0.55)] sm:p-6">
+      <div className="flex items-baseline justify-between gap-3">
+        <p className="text-[1.0625rem] font-extrabold">Son 21 gün</p>
+        <p className="text-[0.8125rem] font-semibold text-muted">örnek ekran · sentetik veri</p>
       </div>
-      <p className="mt-1 text-sm text-muted">3 Kasım 2026 – 17 Kasım 2026</p>
-      <ul className="mt-4 space-y-3">
-        {statements.map((s) => (
-          <li key={s.section} className="rounded-soft border border-line bg-paper p-3">
-            <p className="text-sm font-semibold text-brand-700">{s.section}</p>
-            <p className="mt-1 text-base">{s.text}</p>
-            <p className="mt-1 text-sm text-muted">{s.sources} kayda dayanıyor</p>
-          </li>
+      <div aria-hidden className="mt-4 grid h-32 items-end gap-1 border-b border-ink" style={{ gridTemplateColumns: 'repeat(21, minmax(0, 1fr))' }}>
+        {SAMPLE_DAYS.map((d, i) => (
+          <div key={i} className="flex h-full flex-col items-center justify-end gap-1">
+            {d.attacks.map((a, j) => (
+              <span key={j} className="block aspect-square rounded-full bg-attack" style={{ width: `${35 + a * 6.5}%` }} />
+            ))}
+            <span className="block w-full rounded-t-[2px] bg-sleep" style={{ height: `${d.sleep * 6.2}%` }} />
+          </div>
         ))}
-      </ul>
-      <p className="mt-3 rounded-soft border border-line bg-paper px-3 py-2 text-sm text-ink-2">
-        Bu özet, kendi kayıtlarından AI ile düzenlenmiştir. Teşhis veya tedavi önerisi içermez.
-      </p>
-      <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
-        <span className={buttonCls('secondary', 'select-none')} aria-hidden="true">
-          Paylaşımı geri al
-        </span>
-        <span className="text-sm text-muted">Uzmanın yalnızca onayladığın özeti görür.</span>
+      </div>
+      <div className="mt-5 border-t border-line pt-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="text-[1.0625rem] font-extrabold">Seans öncesi özet</p>
+          <span className="rounded-full bg-ok-100 px-2.5 py-0.5 text-[0.8125rem] font-semibold text-ok-800">Paylaşıldı</span>
+        </div>
+        <ul className="mt-3 space-y-2.5">
+          {(
+            [
+              ['panic', 'Bu dönemde 3 atak kaydın var; ikisi kalabalık toplu taşımada.', 3],
+              ['sleep', 'Ataklardan önceki gecelerde uykun 5 saatin altında.', 3],
+              ['avoidance', 'Bir doğum günü yemeğine gitmediğini yazdın.', 1],
+            ] as [MarkKind, string, number][]
+          ).map(([kind, text, n]) => (
+            <li key={text} className="flex gap-3">
+              <span className="mt-1.5">
+                <Mark kind={kind} size={12} />
+              </span>
+              <p className="text-[0.9375rem] leading-relaxed">
+                {text} <span className="num font-semibold text-muted">· {n} kayıt</span>
+              </p>
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
   )
 }
 
-const STEPS = [
-  { title: 'Arada kaydet', body: 'Günlük, panik atağı, ilaç ve kaçınma kayıtlarını yalnızca sen görürsün.' },
+const STEPS: { mark: MarkKind; title: string; body: string }[] = [
+  { mark: 'quick', title: 'Arada kaydet', body: 'Günlük not, uyku, panik atağı, ilaç ve kaçınma. Otuz saniye sürer; kayıtları yalnızca danışan görür.' },
   {
-    title: 'Seanstan önce özet hazırla',
-    body: 'AI, yalnızca kendi kayıtlarından kaynaklı bir taslak çıkarır. Her ifade hangi kayda dayandığını gösterir; sen düzenler ve onaylarsın.',
+    mark: 'panic',
+    title: 'Seanstan önce özetle',
+    body: 'AI yalnızca seçilen dönemin kayıtlarını toparlar. Her cümle dayandığı kayıtları gösterir; yorum, teşhis ya da öneri eklemez.',
   },
-  { title: 'Seansta konuşulanı not et', body: 'Seans sonrası notunu yazarsın; AI onu düzenler, ne yapılacağına sen karar verirsin.' },
-  {
-    title: 'Zor an için plan yap',
-    body: 'Planım sayfasında adımlarını, kendine notunu ve arayacağın kişileri yazarsın. “O an” kartı bunları büyük yazıyla gösterir.',
-  },
+  { mark: 'medication', title: 'Danışan onaylasın, uzman okusun', body: 'Danışan düzenler ve onaylar. Paylaştığında atanmış uzman okur; paylaşım her an geri alınabilir.' },
+  { mark: 'avoidance', title: 'Seansta konuşulanı unutma', body: 'Seans sonrası iki dakikalık not; zor anlar için uzmanla hazırlanan “O an” kartı.' },
 ]
 
 const ROLES = [
-  ['Klinik yöneticisi', 'Uzmanları davet eder, danışanları atar. Klinik içeriği göremez.'],
-  ['Uzman', 'Yalnızca kendisine atanmış danışanın onaylayıp paylaştığı özetleri görür.'],
-  ['Danışan', 'Kayıtlarının tek sahibidir; neyin paylaşılacağına o karar verir.'],
+  ['Klinik yöneticisi', 'Uzmanları davet eder, danışanları atar. Klinik içeriği hiçbir koşulda göremez.'],
+  ['Uzman', 'Yalnızca kendisine atanmış danışanın onaylayıp paylaştığı özetleri görür; yeni paylaşımlar listede işaretlenir.'],
+  ['Danışan', 'Kayıtlarının tek sahibidir; neyin, ne zaman paylaşılacağına o karar verir.'],
 ]
 
-const PRIVACY = [
-  { title: 'AI teşhis veya ilaç önermez', body: 'Çıktı doğrulanır; teşhis, ilaç, doz ya da tedavi önerisi gibi okunan ifadeler reddedilir.' },
-  {
-    title: 'Kriz anında AI susar',
-    body: 'Kriz ifadesi saptanırsa içerik üretilmez; önceden yazılmış sabit bir ekran gösterilir.',
-  },
-  { title: 'Onaylamadan paylaşılmaz', body: 'Hiçbir özet sen onaylamadan uzmanına ulaşmaz. Paylaşımı istediğin zaman geri alırsın.' },
-  { title: 'Verin senin', body: 'Verini indirebilir, hesabını silebilirsin.' },
-  { title: 'Organizasyonlar ayrıdır', body: 'Bir klinik başka bir kliniğin verisine erişemez.' },
-]
-
-const NAV_LINKS = [
-  ['#nasil', 'Nasıl çalışır'],
-  ['#uzman', 'Uzman için'],
-  ['#guvenlik', 'Güvenlik'],
+const RULES = [
+  ['AI teşhis veya ilaç önermez', 'Çıktı doğrulanır; teşhis, ilaç, doz ya da tedavi önerisi gibi okunan ifadeler reddedilir.'],
+  ['Kriz anında AI susar', 'Kriz ifadesi saptanırsa içerik üretilmez; önceden yazılmış sabit bir ekran gösterilir.'],
+  ['Onaysız paylaşım yok', 'Hiçbir özet danışan onaylamadan uzmana ulaşmaz.'],
+  ['Klinikler birbirinden ayrı', 'Bir klinik başka bir kliniğin verisine erişemez; bu sunucuda, her sorguda uygulanır.'],
+  ['Veri danışanın', 'Danışan verisini indirebilir, hesabını silebilir.'],
 ]
 
 export function Landing() {
@@ -88,131 +89,139 @@ export function Landing() {
   if (state.status === 'loading') return <Spinner />
   if (state.status === 'authed') return <Navigate to={HOME_BY_ROLE[state.user.role]} replace />
 
-  const wrap = 'mx-auto w-full max-w-6xl px-4 sm:px-6'
-  const h2 = 'font-display text-3xl font-semibold sm:text-4xl'
+  const wrap = 'mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8'
   return (
     <div className="min-h-screen">
       <SkipLink />
       <DemoBanner />
-      <header className="border-b border-line">
-        <div className={`${wrap} flex items-center justify-between gap-3 py-3`}>
-          <span className="font-display text-xl font-semibold text-brand-700">InnerSpace</span>
+      <div className="bg-brand-600 text-white">
+        <header className={`${wrap} flex items-center justify-between gap-3 py-4`}>
+          <Logo inverted />
           <nav aria-label="Sayfa içi" className="hidden items-center gap-1 md:flex">
-            {NAV_LINKS.map(([href, label]) => (
-              <a key={href} href={href} className="flex min-h-11 items-center rounded-soft px-3 text-sm font-medium text-ink-2 hover:bg-sunk">
+            {[
+              ['#nasil', 'Nasıl çalışır'],
+              ['#roller', 'Klinik ve uzman'],
+              ['#kurallar', 'Kurallar'],
+            ].map(([href, label]) => (
+              <a key={href} href={href} className="flex min-h-11 items-center rounded-soft px-3 text-[0.9375rem] font-semibold text-brand-50 hover:bg-white/10 hover:text-white">
                 {label}
               </a>
             ))}
           </nav>
-          <LinkButton to="/login" variant="secondary">
+          <Link to="/login" className="btn inline-flex min-h-11 items-center rounded-soft border border-white/40 px-4 text-[0.9375rem] font-bold hover:bg-white/10">
             Giriş yap
-          </LinkButton>
-        </div>
-      </header>
+          </Link>
+        </header>
 
-      <main id="main" tabIndex={-1} className="focus:outline-none">
-        <section className="flex min-h-[calc(100svh-7rem)] items-center py-12 lg:py-16">
-          <div className={`${wrap} grid items-center gap-10 lg:grid-cols-2 lg:gap-14`}>
+        <main id="main" tabIndex={-1} className="focus:outline-none">
+          <section className={`${wrap} grid items-center gap-12 pb-20 pt-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:gap-16 lg:pb-28 lg:pt-16`}>
             <div>
-              <p className="rise mb-4 text-sm font-semibold text-brand-700">Portföy projesi · yalnızca sentetik veri</p>
-              <h1 className="rise rise-2 text-4xl font-semibold leading-tight sm:text-5xl">
-                Terapi ve psikiyatri sürecindeki danışan ve uzmanı için seanslar arası defter
-              </h1>
-              <p className="rise rise-3 mt-5 max-w-xl text-lg text-ink-2">
-                Yaşadıklarını kaydet. Seanstan önce AI, yalnızca senin kayıtlarından kaynaklı bir özet taslağı hazırlasın; sen onaylamadan hiçbir şey uzmanına gitmez.
+              <h1 className="display text-[3.25rem] leading-[0.95] sm:text-[4.5rem] lg:text-[5.25rem]">Seanslar arası defter.</h1>
+              <p className="mt-6 max-w-[34rem] text-lg leading-relaxed text-brand-50 sm:text-xl">
+                Terapi ve psikiyatri sürecindeki danışan yaşadıklarını kaydeder; seanstan önce kendi kayıtlarından, kaynak gösteren kısa bir özet hazırlar. Danışan onaylamadan uzmana hiçbir şey gitmez.
               </p>
-              <div className="rise rise-3 mt-8 flex flex-col gap-3 sm:flex-row">
-                <LinkButton to="/login" className="w-full sm:w-auto">
-                  Demoyu aç
-                </LinkButton>
-                <a href="#nasil" className={buttonCls('secondary', 'w-full sm:w-auto')}>
+              <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+                <Link to="/login" className="btn inline-flex min-h-12 items-center justify-center gap-2 rounded-soft bg-white px-6 text-base font-extrabold text-brand-700 hover:bg-brand-50">
+                  Demoyu aç <ArrowIcon />
+                </Link>
+                <a href="#nasil" className="btn inline-flex min-h-12 items-center justify-center rounded-soft border border-white/40 px-6 text-base font-bold hover:bg-white/10">
                   Nasıl çalışır
                 </a>
               </div>
+              <p className="mt-5 text-[0.9375rem] text-brand-100">Danışan, uzman ve klinik yöneticisi olarak tek tıkla gir. Portföy projesi; yalnızca sentetik veri.</p>
             </div>
-            <div className="rise rise-2">
-              <AppFrame />
-            </div>
-          </div>
-        </section>
+            <ProductSample />
+          </section>
+        </main>
+      </div>
 
-        <section id="nasil" aria-labelledby="nasil-h" className="border-t border-line py-16 lg:py-24">
-          <div className={wrap}>
-            <h2 id="nasil-h" className={h2}>
-              Seanslar arasında dört adım
+      <section id="nasil" aria-labelledby="nasil-h" className="py-20 lg:py-28">
+        <div className={wrap}>
+          <h2 id="nasil-h" className="max-w-[18ch] text-[2.25rem] font-extrabold leading-[1.02] [font-stretch:112%] sm:text-[3rem]">
+            Haftada 50 dakika seans, arada bir hafta hayat.
+          </h2>
+          <p className="mt-5 max-w-[60ch] text-lg text-ink-2">
+            Seansın ilk dakikaları çoğu zaman “bu hafta ne oldu”yu toparlamaya gider. InnerSpace o haftayı seansa hazır getirir.
+          </p>
+          <ol className="mt-14 grid gap-x-8 gap-y-10 border-t border-ink pt-8 sm:grid-cols-2 lg:grid-cols-4">
+            {STEPS.map((s) => (
+              <li key={s.title}>
+                <Mark kind={s.mark} size={28} />
+                <h3 className="mt-4 text-xl font-extrabold">{s.title}</h3>
+                <p className="mt-2 text-base leading-relaxed text-ink-2">{s.body}</p>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      <section aria-label="Kapak" className="relative overflow-hidden bg-brand-600">
+        <img
+          src="/landing-cover.webp"
+          alt=""
+          width={1448}
+          height={1086}
+          loading="lazy"
+          className="h-[22rem] w-full object-cover object-bottom sm:h-[30rem] lg:h-[36rem]"
+          onError={(e) => (e.currentTarget.style.display = 'none')}
+        />
+        <p className="absolute left-0 right-0 top-0 mx-auto max-w-6xl px-4 pt-10 text-[2rem] font-extrabold leading-[1.02] text-white [font-stretch:115%] sm:px-6 sm:pt-14 sm:text-[3.25rem] lg:px-8">
+          Seansta konuşulan unutulmasın;
+          <br />
+          seanslar arası yaşanan da.
+        </p>
+      </section>
+
+      <section id="roller" aria-labelledby="roller-h" className="py-20 lg:py-28">
+        <div className={`${wrap} grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]`}>
+          <div>
+            <h2 id="roller-h" className="text-[2.25rem] font-extrabold leading-[1.02] [font-stretch:112%] sm:text-[3rem]">
+              Klinik, uzman, danışan.
             </h2>
-            <ol className="mt-10 grid gap-4 md:grid-cols-2">
-              {STEPS.map((s, i) => (
-                <li key={s.title} className="rounded-soft-lg border border-line bg-surface p-6">
-                  <p className="text-sm font-semibold text-brand-700">Adım {i + 1}</p>
-                  <h3 className="mt-1 text-xl font-semibold">{s.title}</h3>
-                  <p className="mt-2 text-base text-ink-2">{s.body}</p>
-                </li>
-              ))}
-            </ol>
-          </div>
-        </section>
-
-        <section aria-label="Bir cümle" className="bg-brand-800 py-20 text-white lg:py-32">
-          <div className={wrap}>
-            <p className="max-w-4xl font-display text-3xl font-medium leading-snug sm:text-5xl">
-              Seansta konuşulan unutulmasın; seanslar arası yaşanan da.
+            <p className="mt-5 max-w-[46ch] text-lg text-ink-2">
+              Klinik bir organizasyon olarak çalışır. Her rol yalnızca işini yapmak için gereken kadarını görür.
             </p>
           </div>
-        </section>
+          <dl className="divide-y divide-line border-y border-ink">
+            {ROLES.map(([t, b]) => (
+              <div key={t} className="grid gap-1 py-5 sm:grid-cols-[11rem_1fr] sm:gap-6">
+                <dt className="text-lg font-extrabold">{t}</dt>
+                <dd className="text-base leading-relaxed text-ink-2">{b}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      </section>
 
-        <section id="uzman" aria-labelledby="uzman-h" className="py-16 lg:py-24">
-          <div className={`${wrap} grid gap-10 lg:grid-cols-2`}>
-            <div>
-              <h2 id="uzman-h" className={h2}>
-                Klinik, uzman ve danışan için ayrı roller
-              </h2>
-              <p className="mt-4 text-lg text-ink-2">
-                Kurum bir klinik olarak çalışır: klinik yöneticisi uzmanları ve danışan atamalarını yönetir, uzman paylaşılan özetleri okur.
-              </p>
-            </div>
-            <ul className="space-y-3">
-              {ROLES.map(([t, b]) => (
-                <li key={t} className="rounded-soft-lg border border-line bg-surface p-5">
-                  <h3 className="text-lg font-semibold">{t}</h3>
-                  <p className="mt-1 text-base text-ink-2">{b}</p>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </section>
+      <section id="kurallar" aria-labelledby="kurallar-h" className="bg-ink py-20 text-white lg:py-28">
+        <div className={wrap}>
+          <h2 id="kurallar-h" className="max-w-[20ch] text-[2.25rem] font-extrabold leading-[1.02] [font-stretch:112%] sm:text-[3rem]">
+            Kurallar sunucuda; yapay zekânın kararına bırakılmaz.
+          </h2>
+          <ul className="mt-12 grid gap-x-10 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
+            {RULES.map(([t, b]) => (
+              <li key={t} className="border-t border-white/25 pt-5">
+                <h3 className="text-lg font-extrabold">{t}</h3>
+                <p className="mt-2 text-base leading-relaxed text-white/75">{b}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
 
-        <section id="guvenlik" aria-labelledby="guvenlik-h" className="border-t border-line bg-sunk py-16 lg:py-24">
-          <div className={wrap}>
-            <h2 id="guvenlik-h" className={h2}>
-              Güvenlik ve mahremiyet kuralları
-            </h2>
-            <p className="mt-4 max-w-2xl text-lg text-ink-2">Bu kurallar sunucuda uygulanır; yapay zekânın kararına bırakılmaz.</p>
-            <ul className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {PRIVACY.map((p) => (
-                <li key={p.title} className="rounded-soft-lg border border-line bg-surface p-6">
-                  <h3 className="text-lg font-semibold">{p.title}</h3>
-                  <p className="mt-2 text-base text-ink-2">{p.body}</p>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </section>
-
-        <section aria-labelledby="kapanis-h" className="border-t border-line py-16 lg:py-24">
-          <div className={`${wrap} flex flex-col items-start gap-6`}>
-            <h2 id="kapanis-h" className={h2}>
-              Demoyu sentetik verilerle dene
-            </h2>
-            <LinkButton to="/login" className="w-full sm:w-auto">
-              Demoyu aç
-            </LinkButton>
-          </div>
-        </section>
-      </main>
+      <section aria-labelledby="kapanis-h" className="py-20 lg:py-24">
+        <div className={`${wrap} flex flex-col items-start gap-6 sm:flex-row sm:items-center sm:justify-between`}>
+          <h2 id="kapanis-h" className="text-[2rem] font-extrabold leading-[1.05] [font-stretch:112%] sm:text-[2.5rem]">
+            Üç rolü de bir dakikada gez.
+          </h2>
+          <Link to="/login" className={buttonCls('primary', 'min-h-12 px-6 text-base')}>
+            Demoyu aç <ArrowIcon />
+          </Link>
+        </div>
+      </section>
 
       <footer className="border-t border-line py-8">
-        <div className={`${wrap} flex flex-col gap-2 text-sm text-ink-2 sm:flex-row sm:justify-between`}>
+        <div className={`${wrap} flex flex-col gap-2 text-[0.9375rem] text-ink-2 sm:flex-row sm:justify-between`}>
           <p>InnerSpace · portföy projesi. Gerçek kişisel veya sağlık bilgisi girme.</p>
           <p>Tıbbi tavsiye vermez; teşhis veya tedavi aracı değildir.</p>
           <a href={REPO_URL} className="link" rel="noreferrer">

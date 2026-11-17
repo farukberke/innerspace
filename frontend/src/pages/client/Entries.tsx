@@ -1,8 +1,11 @@
 import { useCallback, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { errorMessage } from '../../api/client'
 import { entriesApi } from '../../api/endpoints'
 import type { Entry, EntryKind } from '../../api/types'
-import { Alert, Badge, Button, Card, Empty, formatDateTime, PageHeader, SelectField, Spinner } from '../../components/ui'
+import { PlusIcon } from '../../components/icons'
+import { Mark } from '../../components/Mark'
+import { Alert, Button, Card, Empty, formatDateTime, PageHeader, SelectField, Spinner } from '../../components/ui'
 import { useLoad } from '../../hooks/useLoad'
 import { ReminderStrip } from '../../components/ReminderStrip'
 import { EntryForm, KIND_LABEL } from './EntryForm'
@@ -13,7 +16,12 @@ function detailsLine(e: Entry): string {
   const d = e.details
   switch (e.kind) {
     case 'quick':
-      return typeof d.mood === 'number' ? `Ruh hali: ${d.mood}/5` : ''
+      return [
+        typeof d.mood === 'number' ? `Ruh hali ${d.mood}/5` : '',
+        typeof d.sleep_hours === 'number' ? `Uyku ${String(d.sleep_hours).replace('.', ',')} sa` : '',
+      ]
+        .filter(Boolean)
+        .join(' · ')
     case 'panic':
       return `Şiddet: ${String(d.intensity)}/10${d.duration_minutes != null ? ` · ${String(d.duration_minutes)} dk` : ''}`
     case 'medication':
@@ -26,7 +34,9 @@ function detailsLine(e: Entry): string {
 export function Entries() {
   const [kind, setKind] = useState<EntryKind | ''>('')
   const [offset, setOffset] = useState(0)
-  const [editing, setEditing] = useState<Entry | 'new' | null>(null)
+  // The home page's "Kayıt ekle" links here with ?yeni=1.
+  const [params] = useSearchParams()
+  const [editing, setEditing] = useState<Entry | 'new' | null>(params.get('yeni') ? 'new' : null)
   const [actionError, setActionError] = useState<string | null>(null)
   const load = useCallback(() => entriesApi.list({ kind: kind || undefined, limit: PAGE, offset }), [kind, offset])
   const { data, error, loading, reload } = useLoad(load)
@@ -49,7 +59,17 @@ export function Entries() {
 
   return (
     <div>
-      <PageHeader title="Kayıtlarım" actions={editing ? null : <Button onClick={() => setEditing('new')}>Yeni kayıt</Button>} />
+      <PageHeader
+        title="Kayıtlarım"
+        lede="Yalnızca sen görürsün. Özet hazırladığında bu kayıtlardan alıntı yapılır."
+        actions={
+          editing ? null : (
+            <Button onClick={() => setEditing('new')}>
+              <PlusIcon /> Yeni kayıt
+            </Button>
+          )
+        }
+      />
       {!editing && <ReminderStrip />}
       {editing && (
         <Card className="mb-5">
@@ -77,29 +97,47 @@ export function Entries() {
       {loading ? (
         <Spinner />
       ) : data && data.items.length === 0 ? (
-        <Empty>Henüz kayıt yok. İlk kaydını ekleyerek başlayabilirsin.</Empty>
+        kind ? (
+          <Empty title="Bu türde kayıt yok">Filtreyi “Tümü” yaparak diğer kayıtlarını görebilirsin.</Empty>
+        ) : (
+          <Empty
+            title="Defterin boş"
+            action={
+              editing ? null : (
+                <Button onClick={() => setEditing('new')}>
+                  <PlusIcon /> İlk kaydı ekle
+                </Button>
+              )
+            }
+          >
+            Bir gün nasıl geçti, bir atak, ilacın ya da kaçındığın bir durum: 30 saniyelik bir kayıt yeter. Seansa hazırlanırken buradan derlenir.
+          </Empty>
+        )
       ) : (
-        <ul className="space-y-3">
+        <ul className="divide-y divide-line overflow-hidden rounded-soft-lg border border-line bg-surface">
           {data?.items.map((e) => (
-            <li key={e.id}>
-              <Card>
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <Badge tone="brand">{KIND_LABEL[e.kind]}</Badge>
-                    <span className="text-xs text-muted">{formatDateTime(e.occurred_at)}</span>
-                  </div>
-                  <div className="flex gap-1">
-                    <Button variant="ghost" onClick={() => setEditing(e)}>
-                      Düzenle
-                    </Button>
-                    <Button variant="ghost" onClick={() => remove(e)}>
-                      Sil
-                    </Button>
-                  </div>
+            <li key={e.id} className="flex gap-4 px-4 py-4 sm:px-5">
+              <span className="mt-1">
+                <Mark kind={e.kind} size={16} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                  <p className="font-bold text-ink">
+                    {KIND_LABEL[e.kind]}
+                    {detailsLine(e) && <span className="font-normal text-ink-2"> · {detailsLine(e)}</span>}
+                  </p>
+                  <span className="num text-[0.875rem] text-muted">{formatDateTime(e.occurred_at)}</span>
                 </div>
-                {detailsLine(e) && <p className="mt-2 text-sm text-ink-2">{detailsLine(e)}</p>}
-                {e.note && <p className="mt-1 whitespace-pre-wrap break-words text-sm text-ink-2">{e.note}</p>}
-              </Card>
+                {e.note && <p className="mt-1 max-w-[70ch] whitespace-pre-wrap break-words text-base text-ink-2">{e.note}</p>}
+                <div className="-ml-3 mt-1 flex gap-1">
+                  <Button variant="ghost" onClick={() => setEditing(e)} aria-label={`${KIND_LABEL[e.kind]} kaydını düzenle`}>
+                    Düzenle
+                  </Button>
+                  <Button variant="ghost" onClick={() => remove(e)} aria-label={`${KIND_LABEL[e.kind]} kaydını sil`}>
+                    Sil
+                  </Button>
+                </div>
+              </div>
             </li>
           ))}
         </ul>

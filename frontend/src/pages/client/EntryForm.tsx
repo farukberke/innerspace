@@ -32,8 +32,12 @@ export function buildDetails(kind: EntryKind, f: Record<string, string | boolean
   const optInt = (v: string | boolean) => (typeof v === 'string' && v !== '' ? Number(v) : null)
   switch (kind) {
     case 'quick': {
+      const d: Record<string, unknown> = {}
       const mood = optInt(f.mood)
-      return mood === null ? {} : { mood }
+      if (mood !== null) d.mood = mood
+      const sleep = optInt(f.sleep)
+      if (sleep !== null) d.sleep_hours = sleep
+      return d
     }
     case 'panic': {
       const d: Record<string, unknown> = { intensity: Number(f.intensity), symptoms: splitList(String(f.symptoms)) }
@@ -60,6 +64,7 @@ export function EntryForm({ entry, onSaved, onCancel }: { entry?: Entry; onSaved
   const [note, setNote] = useState(entry?.note ?? '')
   const [f, setF] = useState<Record<string, string | boolean>>({
     mood: num(d.mood),
+    sleep: num(d.sleep_hours),
     intensity: num(d.intensity) || '5',
     duration: num(d.duration_minutes),
     symptoms: list(d.symptoms),
@@ -110,7 +115,19 @@ export function EntryForm({ entry, onSaved, onCancel }: { entry?: Entry; onSaved
       </div>
 
       {kind === 'quick' && (
-        <TextField label="Ruh hali (1-5, isteğe bağlı)" type="number" min={1} max={5} value={String(f.mood)} onChange={(e) => set('mood', e.target.value)} />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <TextField label="Ruh hali (1-5, isteğe bağlı)" type="number" min={1} max={5} value={String(f.mood)} onChange={(e) => set('mood', e.target.value)} />
+          <TextField
+            label="Dün gece uyku (saat, isteğe bağlı)"
+            type="number"
+            inputMode="decimal"
+            min={0}
+            max={24}
+            step={0.5}
+            value={String(f.sleep)}
+            onChange={(e) => set('sleep', e.target.value)}
+          />
+        </div>
       )}
       {kind === 'panic' && (
         <div className="grid gap-4 sm:grid-cols-2">

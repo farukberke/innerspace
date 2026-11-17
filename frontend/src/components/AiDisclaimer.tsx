@@ -8,7 +8,7 @@ export const AI_DISCLAIMER_NOTE = 'Bu not, kendi yazdığından AI ile düzenlen
 export function AiDisclaimer({ audience, kind = 'summary' }: { audience: 'client' | 'clinician'; kind?: 'summary' | 'note' }) {
   const text = kind === 'note' ? AI_DISCLAIMER_NOTE : audience === 'client' ? AI_DISCLAIMER_CLIENT : AI_DISCLAIMER_CLINICIAN
   return (
-    <p data-testid="ai-disclaimer" className="mt-2 rounded-soft border border-line bg-paper px-3 py-2 text-xs text-ink-2">
+    <p data-testid="ai-disclaimer" className="mt-4 border-t border-line pt-3 text-[0.8125rem] leading-relaxed text-muted">
       {text}
     </p>
   )

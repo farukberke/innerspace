@@ -24,6 +24,16 @@ export interface ClientRead {
   id: string
   display_name: string
   next_appointment_at: string | null
+  /** Latest share among the summaries this clinician may see (metadata only). */
+  last_shared_at: string | null
+  /** Shared summaries this clinician has not opened since they were (re)shared. */
+  new_summaries: number
+}
+
+export type DemoRole = UserRole
+
+export interface DemoLoginStatus {
+  enabled: boolean
 }
 
 export interface InvitationCreated {
@@ -97,6 +107,8 @@ export interface SummaryListItem {
   period_end: string | null
   shared_at: string | null
   created_at: string
+  /** Not opened by this clinician since it was (re)shared. */
+  is_new: boolean
 }
 
 export interface SharedSummary extends SummaryListItem {

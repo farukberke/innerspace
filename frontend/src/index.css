@@ -1,76 +1,119 @@
 @import "tailwindcss";
 
+/* InnerSpace: Turkish graphic modernism as a working product. Cobalt owns the shell, each record
+   kind owns one mark colour (attack = vermilion, sleep = ochre, medication = green, avoidance =
+   ink ring), everything else is ink on cool paper with 1px hairlines. One family: Archivo. */
 @theme {
-  --font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Fraunces", Georgia, serif;
+  --font-sans: "Archivo", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Archivo", ui-sans-serif, system-ui, sans-serif;
 
-  --color-paper: #f7f4ee;
+  --color-paper: #f4f4f0;
   --color-surface: #ffffff;
-  --color-sunk: #efebe3;
-  --color-line: #e2ddd2;
-  --color-line-strong: #b9b2a2;
-  --color-ink: #14262b;
-  --color-ink-2: #39494d;
-  --color-muted: #566568;
+  --color-sunk: #eaeae4;
+  --color-line: #d9dad4;
+  --color-line-strong: #a3a59d;
+  --color-ink: #15172a;
+  --color-ink-2: #383b50;
+  --color-muted: #565a6e;
 
-  --color-brand-50: #e8f3f2;
-  --color-brand-100: #cfe6e4;
-  --color-brand-200: #a3cfcb;
-  --color-brand-400: #3f918b;
-  --color-brand-500: #247873;
-  --color-brand-600: #17625f;
-  --color-brand-700: #0f4e4c;
-  --color-brand-800: #0b3d3c;
-  --color-brand-900: #082e2e;
+  /* Cobalt: shell, primary actions, the appointment field. */
+  --color-brand-50: #eef1fb;
+  --color-brand-100: #dce2f6;
+  --color-brand-200: #b7c3ec;
+  --color-brand-300: #8d9fe0;
+  --color-brand-400: #4e64c2;
+  --color-brand-500: #3149ae;
+  --color-brand-600: #22389a;
+  --color-brand-700: #1b2d7e;
+  --color-brand-800: #152366;
+  --color-brand-900: #0f1a4d;
 
-  --color-danger-50: #fbeeea;
-  --color-danger-100: #f6dbd3;
-  --color-danger-200: #ebbbae;
-  --color-danger-600: #b3402a;
-  --color-danger-700: #98341f;
-  --color-danger-800: #7a2917;
+  /* Vermilion: attacks, "O an", destructive actions. */
+  --color-danger-50: #fdeeea;
+  --color-danger-100: #fadbd3;
+  --color-danger-200: #f2b4a6;
+  --color-danger-600: #c93a22;
+  --color-danger-700: #a82f1b;
+  --color-danger-800: #85240f;
 
-  --color-warn-50: #fbf3dd;
-  --color-warn-100: #f5e7b8;
-  --color-warn-200: #e8d08a;
-  --color-warn-300: #d9bb62;
-  --color-warn-800: #6b4e0a;
-  --color-warn-900: #4f3a06;
+  /* Ochre: sleep, drafts, gentle notices. */
+  --color-warn-50: #fcf5e3;
+  --color-warn-100: #f8e8be;
+  --color-warn-200: #efd38a;
+  --color-warn-300: #e0a526;
+  --color-warn-800: #6b4d04;
+  --color-warn-900: #4a3503;
 
-  --color-info-50: #e9f1f7;
-  --color-info-200: #bcd3e4;
-  --color-info-800: #1f4a6b;
+  --color-info-50: #eef1fb;
+  --color-info-200: #b7c3ec;
+  --color-info-800: #152366;
 
-  --color-ok-50: #e8f3ea;
-  --color-ok-100: #d1e8d5;
-  --color-ok-200: #a8d2b0;
-  --color-ok-800: #1e5b2e;
+  /* Green: medication, shared. */
+  --color-ok-50: #e8f4ee;
+  --color-ok-100: #cfe9dc;
+  --color-ok-200: #a3d3ba;
+  --color-ok-800: #1d5c42;
 
-  --radius-soft: 0.75rem;
-  --radius-soft-lg: 1.25rem;
+  /* Mark colours (graphic only, never body text). */
+  --color-attack: #e2492f;
+  --color-sleep: #e0a526;
+  --color-med: #2f8f6b;
+
+  --radius-soft: 0.375rem;
+  --radius-soft-lg: 0.5rem;
 }
 
 @layer base {
   html {
     scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
   }
   body {
     @apply bg-paper font-sans text-ink antialiased;
     overflow-x: hidden;
+    font-feature-settings: "tnum" 0;
   }
   h1 {
-    font-family: var(--font-display);
-    letter-spacing: -0.01em;
+    font-weight: 800;
+    font-stretch: 112%;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+  ::selection {
+    background: var(--color-brand-200);
+    color: var(--color-ink);
+  }
+  input,
+  textarea {
+    caret-color: var(--color-brand-600);
   }
   :focus-visible {
     outline: 3px solid var(--color-brand-500);
     outline-offset: 2px;
   }
+  * {
+    scrollbar-color: var(--color-line-strong) transparent;
+  }
 }
 
-/* Single link look: underline sits right under the text; it thickens on hover/focus. */
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Wide, heavy display voice of the poster tradition. */
+.display {
+  font-weight: 800;
+  font-stretch: 118%;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
 .link {
-  @apply font-medium text-brand-700;
+  @apply font-semibold text-brand-700;
   text-decoration: underline;
   text-decoration-thickness: 1px;
   text-underline-offset: 0.25em;
@@ -80,39 +123,35 @@
 .link:focus-visible {
   text-decoration-thickness: 2px;
 }
+
 @media (prefers-reduced-motion: no-preference) {
-  .lift {
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-  }
-  .lift:hover {
-    transform: translateY(-2px);
-  }
   .btn {
-    transition: transform 0.15s ease, background-color 0.15s ease;
-  }
-  .btn:hover:not(:disabled) {
-    transform: translateX(2px);
+    transition:
+      background-color 0.15s ease,
+      color 0.15s ease,
+      transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
   }
   .btn:active:not(:disabled) {
-    transform: translateY(1px) scale(0.98);
+    transform: translateY(1px);
   }
-  .rise {
-    animation: rise 0.7s ease both;
+  /* The one authored moment: marks settle into the rhythm strip, oldest day first. */
+  .mark-in {
+    animation: mark-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: calc(var(--i, 0) * 18ms);
+    transform-origin: bottom;
   }
-  .rise-2 {
-    animation-delay: 0.12s;
-  }
-  .rise-3 {
-    animation-delay: 0.24s;
-  }
-  @keyframes rise {
+  @keyframes mark-in {
     from {
-      opacity: 0;
-      transform: translateY(12px);
+      transform: scaleY(0.2);
     }
-    to {
-      opacity: 1;
-      transform: none;
+  }
+  .sheet {
+    animation: sheet-in 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  @keyframes sheet-in {
+    from {
+      transform: translateY(24px);
+      opacity: 0.6;
     }
   }
 }

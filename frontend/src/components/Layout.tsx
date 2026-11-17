@@ -1,36 +1,29 @@
-import { useState } from 'react'
-import { Link, NavLink, Outlet } from 'react-router-dom'
-import { useAuth } from '../auth/AuthContext'
-import { ROLE_LABEL } from '../auth/roles'
+import { useEffect, useRef, useState, type ComponentType, type SVGProps } from 'react'
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import type { UserRole } from '../api/types'
-import { HOME_BY_ROLE } from '../auth/roles'
-import { Button, buttonCls } from './ui'
+import { useAuth } from '../auth/AuthContext'
+import { HOME_BY_ROLE, ROLE_LABEL } from '../auth/roles'
+import {
+  CalendarIcon,
+  CloseIcon,
+  LinkIcon,
+  LogoutIcon,
+  MenuIcon,
+  NotebookIcon,
+  PenIcon,
+  PlanIcon,
+  SummaryIcon,
+  TodayIcon,
+  UserIcon,
+  UsersIcon,
+} from './icons'
 
-export function DemoBanner() {
+export function DemoBanner({ className = '' }: { className?: string }) {
   return (
-    <div role="note" className="bg-warn-100 px-4 py-2 text-center text-sm font-medium text-warn-900">
+    <div role="note" className={`bg-warn-100 px-4 py-2 text-center text-[0.8125rem] font-semibold text-warn-900 ${className}`}>
       Demo — yalnızca sentetik veri. Gerçek kişisel veya sağlık bilgisi girme.
     </div>
   )
-}
-
-const NAV: Record<UserRole, { to: string; label: string }[]> = {
-  client: [
-    { to: '/client/entries', label: 'Kayıtlarım' },
-    { to: '/client/summaries', label: 'Özetlerim' },
-    { to: '/client/appointments', label: 'Randevularım' },
-    { to: '/client/plan', label: 'Planım' },
-    { to: '/client/after-session', label: 'Seans sonrası' },
-    { to: '/client/account', label: 'Hesabım' },
-  ],
-  clinician: [
-    { to: '/clinician/clients', label: 'Danışanlarım' },
-    { to: '/clinician/summaries', label: 'Paylaşılan özetler' },
-  ],
-  org_admin: [
-    { to: '/admin/users', label: 'Kullanıcılar' },
-    { to: '/admin/assignments', label: 'Atamalar' },
-  ],
 }
 
 export function SkipLink() {
@@ -41,72 +34,259 @@ export function SkipLink() {
   )
 }
 
-export function Layout() {
-  const { state, logout } = useAuth()
-  const [open, setOpen] = useState(false)
-  if (state.status !== 'authed') return null
-  const { user } = state
-  const link = ({ isActive }: { isActive: boolean }) =>
-    `flex min-h-11 items-center rounded-soft px-3 py-2 text-base font-medium md:text-sm ${isActive ? 'bg-brand-100 text-brand-800' : 'text-ink-2 hover:bg-sunk'}`
-
+/** The brand mark: an attack disc and a sleep bar, the two marks the product is built around. */
+export function Logo({ inverted = false, className = '' }: { inverted?: boolean; className?: string }) {
   return (
-    <div className="min-h-screen">
-      <SkipLink />
-      <DemoBanner />
-      <header className="sticky top-0 z-30 border-b border-line bg-paper">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
-          <Link to={HOME_BY_ROLE[user.role]} className="font-display text-xl font-semibold text-brand-700">
-            InnerSpace
-          </Link>
-          <div className="flex items-center gap-2 md:order-3">
-            {user.role === 'client' && (
-              <Link to="/client/moment" className={buttonCls('danger')}>
-                O an
-              </Link>
-            )}
-            <button
-              type="button"
-              className={`${buttonCls('secondary')} md:hidden`}
-              aria-expanded={open}
-              aria-controls="main-nav"
-              onClick={() => setOpen((o) => !o)}
-            >
-              Menü
-            </button>
-            <div className="hidden items-center gap-3 md:flex">
-              <div className="text-right text-xs leading-tight text-ink-2">
-                <div className="font-semibold text-ink">{user.display_name}</div>
-                <div>{ROLE_LABEL[user.role]}</div>
-              </div>
-              <Button variant="secondary" onClick={logout}>
-                Çıkış
-              </Button>
+    <span className={`inline-flex items-center gap-2.5 ${className}`}>
+      <svg viewBox="0 0 28 28" width="28" height="28" aria-hidden className="shrink-0">
+        <circle cx="10" cy="11" r="8" fill="var(--color-attack)" />
+        <rect x="16" y="13" width="9" height="13" rx="1.5" fill="var(--color-sleep)" />
+      </svg>
+      <span className={`text-[1.375rem] font-extrabold tracking-tight [font-stretch:118%] ${inverted ? 'text-white' : 'text-ink'}`}>
+        InnerSpace
+      </span>
+    </span>
+  )
+}
+
+type IconType = ComponentType<SVGProps<SVGSVGElement>>
+interface NavItem {
+  to: string
+  label: string
+  icon: IconType
+  /** Shown in the phone tab bar; the rest live in the "Daha" sheet. */
+  primary?: boolean
+}
+
+export const NAV: Record<UserRole, NavItem[]> = {
+  client: [
+    { to: '/client/home', label: 'Bugün', icon: TodayIcon, primary: true },
+    { to: '/client/entries', label: 'Kayıtlarım', icon: NotebookIcon, primary: true },
+    { to: '/client/summaries', label: 'Özetlerim', icon: SummaryIcon, primary: true },
+    { to: '/client/plan', label: 'Planım', icon: PlanIcon, primary: true },
+    { to: '/client/appointments', label: 'Randevularım', icon: CalendarIcon },
+    { to: '/client/after-session', label: 'Seans sonrası', icon: PenIcon },
+    { to: '/client/account', label: 'Hesabım', icon: UserIcon },
+  ],
+  clinician: [
+    { to: '/clinician/clients', label: 'Danışanlarım', icon: UsersIcon, primary: true },
+    { to: '/clinician/summaries', label: 'Paylaşılan özetler', icon: SummaryIcon, primary: true },
+  ],
+  org_admin: [
+    { to: '/admin/users', label: 'Kullanıcılar', icon: UsersIcon, primary: true },
+    { to: '/admin/assignments', label: 'Atamalar', icon: LinkIcon, primary: true },
+  ],
+}
+
+function initials(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter((p) => /\p{L}/u.test(p[0] ?? ''))
+    .slice(0, 2)
+    .map((p) => p[0]!.toLocaleUpperCase('tr-TR'))
+    .join('')
+}
+
+function MomentButton({ className = '' }: { className?: string }) {
+  return (
+    <Link
+      to="/client/moment"
+      className={`btn inline-flex min-h-11 items-center justify-center gap-2 rounded-soft bg-danger-600 px-4 font-extrabold text-white hover:bg-danger-700 ${className}`}
+    >
+      <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-white" />O an
+    </Link>
+  )
+}
+
+/** Phone "Daha" sheet: secondary destinations, who is signed in, and sign-out. */
+function MoreSheet({ items, onClose }: { items: NavItem[]; onClose: () => void }) {
+  const { state, logout } = useAuth()
+  const closeRef = useRef<HTMLButtonElement>(null)
+  useEffect(() => {
+    closeRef.current?.focus()
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
+    document.addEventListener('keydown', onKey)
+    const overflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.body.style.overflow = overflow
+    }
+  }, [onClose])
+  if (state.status !== 'authed') return null
+  return (
+    <div className="fixed inset-0 z-40 lg:hidden">
+      <button type="button" aria-label="Menüyü kapat" tabIndex={-1} className="absolute inset-0 bg-ink/40" onClick={onClose} />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Menü"
+        className="sheet absolute inset-x-0 bottom-0 rounded-t-2xl bg-surface px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-8px_32px_rgba(21,23,42,0.18)]"
+      >
+        <div className="flex items-center justify-between gap-3 pb-2">
+          <div className="flex min-w-0 items-center gap-3">
+            <span aria-hidden className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-brand-600 text-sm font-bold text-white">
+              {initials(state.user.display_name)}
+            </span>
+            <div className="min-w-0 leading-tight">
+              <div className="truncate font-bold">{state.user.display_name}</div>
+              <div className="text-[0.8125rem] text-muted">{ROLE_LABEL[state.user.role]}</div>
             </div>
           </div>
-          <nav
-            id="main-nav"
-            aria-label="Ana menü"
-            className={`${open ? 'flex' : 'hidden'} fixed inset-x-0 bottom-0 top-0 z-20 flex-col gap-1 overflow-y-auto bg-paper px-4 pb-6 pt-24 md:static md:z-auto md:flex md:flex-1 md:flex-row md:overflow-visible md:bg-transparent md:p-0 md:pl-6`}
-          >
-            {NAV[user.role].map((n) => (
-              <NavLink key={n.to} to={n.to} className={link} onClick={() => setOpen(false)}>
-                {n.label}
-              </NavLink>
-            ))}
-            <div className="mt-4 flex flex-col gap-3 border-t border-line pt-4 md:hidden">
-              <span className="text-sm text-ink-2">
-                {user.display_name} · {ROLE_LABEL[user.role]}
-              </span>
-              <Button variant="secondary" onClick={logout} className="w-full">
-                Çıkış
-              </Button>
-            </div>
-          </nav>
+          <button ref={closeRef} type="button" onClick={onClose} className="grid h-11 w-11 place-items-center rounded-soft hover:bg-sunk" aria-label="Kapat">
+            <CloseIcon />
+          </button>
         </div>
-      </header>
-      <main id="main" tabIndex={-1} className="mx-auto max-w-6xl px-4 py-8 focus:outline-none sm:px-6">
-        <Outlet />
-      </main>
+        {items.length > 0 && (
+          <ul className="border-t border-line py-2">
+            {items.map((n) => (
+              <li key={n.to}>
+                <NavLink
+                  to={n.to}
+                  onClick={onClose}
+                  className={({ isActive }) =>
+                    `flex min-h-12 items-center gap-3 rounded-soft px-3 text-base font-semibold ${isActive ? 'bg-brand-50 text-brand-700' : 'text-ink hover:bg-sunk'}`
+                  }
+                >
+                  <n.icon />
+                  {n.label}
+                </NavLink>
+              </li>
+            ))}
+          </ul>
+        )}
+        <button
+          type="button"
+          onClick={logout}
+          className="flex min-h-12 w-full items-center gap-3 rounded-soft border-t border-line px-3 text-base font-semibold text-ink hover:bg-sunk"
+        >
+          <LogoutIcon />
+          Çıkış yap
+        </button>
+      </div>
+    </div>
+  )
+}
+
+export function Layout() {
+  const { state, logout } = useAuth()
+  const [moreOpen, setMoreOpen] = useState(false)
+  const location = useLocation()
+  // Navigation closes the sheet (also covers the browser back button).
+  const [lastPath, setLastPath] = useState(location.pathname)
+  if (lastPath !== location.pathname) {
+    setLastPath(location.pathname)
+    setMoreOpen(false)
+  }
+  if (state.status !== 'authed') return null
+  const { user } = state
+  const items = NAV[user.role]
+  const primary = items.filter((n) => n.primary)
+  const secondary = items.filter((n) => !n.primary)
+  const secondaryActive = secondary.some((n) => location.pathname.startsWith(n.to))
+
+  return (
+    <div className="min-h-screen lg:grid lg:grid-cols-[16.5rem_1fr]">
+      <SkipLink />
+
+      {/* Desktop: the cobalt rail. */}
+      <aside className="sticky top-0 hidden h-screen flex-col bg-brand-600 px-4 pb-5 pt-6 text-white lg:flex">
+        <Link to={HOME_BY_ROLE[user.role]} className="mb-8 px-2">
+          <Logo inverted />
+        </Link>
+        <nav aria-label="Ana menü">
+          <ul className="space-y-1">
+            {items.map((n) => (
+              <li key={n.to}>
+                <NavLink
+                  to={n.to}
+                  className={({ isActive }) =>
+                    `flex min-h-11 items-center gap-3 rounded-soft px-3 text-[0.9375rem] font-semibold transition-colors ${
+                      isActive ? 'bg-white text-brand-700' : 'text-brand-50 hover:bg-white/10 hover:text-white'
+                    }`
+                  }
+                >
+                  <n.icon />
+                  {n.label}
+                </NavLink>
+              </li>
+            ))}
+          </ul>
+        </nav>
+        <div className="mt-auto space-y-4">
+          {user.role === 'client' && <MomentButton className="w-full text-lg" />}
+          <div className="flex items-center gap-3 border-t border-white/20 pt-4">
+            <span aria-hidden className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/15 text-[0.8125rem] font-bold">
+              {initials(user.display_name)}
+            </span>
+            <div className="min-w-0 flex-1 leading-tight">
+              <div className="truncate text-[0.9375rem] font-bold">{user.display_name}</div>
+              <div className="text-[0.8125rem] text-brand-100">{ROLE_LABEL[user.role]}</div>
+            </div>
+            <button type="button" onClick={logout} className="grid h-11 w-11 place-items-center rounded-soft text-brand-50 hover:bg-white/10 hover:text-white" aria-label="Çıkış">
+              <LogoutIcon />
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      <div className="min-w-0">
+        <DemoBanner />
+        {/* Phone/tablet: slim top bar; destinations live in the bottom tab bar. */}
+        <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-line bg-paper/95 px-4 py-2.5 backdrop-blur lg:hidden">
+          <Link to={HOME_BY_ROLE[user.role]} aria-label="InnerSpace ana sayfa">
+            <Logo />
+          </Link>
+          {user.role === 'client' && <MomentButton />}
+        </header>
+
+        <main id="main" tabIndex={-1} className="mx-auto w-full max-w-6xl px-4 pb-28 pt-6 focus:outline-none sm:px-6 sm:pt-8 lg:px-10 lg:pb-16 lg:pt-10">
+          <Outlet />
+        </main>
+
+        <nav aria-label="Ana menü" className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface pb-[env(safe-area-inset-bottom)] lg:hidden">
+          <ul className="mx-auto grid max-w-lg" style={{ gridTemplateColumns: `repeat(${primary.length + 1}, minmax(0, 1fr))` }}>
+            {primary.map((n) => (
+              <li key={n.to}>
+                <NavLink
+                  to={n.to}
+                  className={({ isActive }) =>
+                    `flex min-h-16 flex-col items-center justify-center gap-1 px-1 text-[0.75rem] font-semibold leading-none ${
+                      isActive ? 'text-brand-700' : 'text-muted hover:text-ink'
+                    }`
+                  }
+                >
+                  {({ isActive }) => (
+                    <>
+                      <span className={`grid h-7 w-12 place-items-center rounded-full ${isActive ? 'bg-brand-100' : ''}`}>
+                        <n.icon />
+                      </span>
+                      <span className="max-w-full truncate">{n.label}</span>
+                    </>
+                  )}
+                </NavLink>
+              </li>
+            ))}
+            <li>
+              <button
+                type="button"
+                aria-haspopup="dialog"
+                aria-expanded={moreOpen}
+                onClick={() => setMoreOpen(true)}
+                className={`flex min-h-16 w-full flex-col items-center justify-center gap-1 px-1 text-[0.75rem] font-semibold leading-none ${
+                  secondaryActive ? 'text-brand-700' : 'text-muted hover:text-ink'
+                }`}
+              >
+                <span className={`grid h-7 w-12 place-items-center rounded-full ${secondaryActive ? 'bg-brand-100' : ''}`}>
+                  <MenuIcon />
+                </span>
+                Daha
+              </button>
+            </li>
+          </ul>
+        </nav>
+        {moreOpen && <MoreSheet items={secondary} onClose={() => setMoreOpen(false)} />}
+      </div>
     </div>
   )
 }

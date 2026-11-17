@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { errorMessage } from '../../api/client'
 import { appointmentsApi, summariesApi } from '../../api/endpoints'
 import type { SummaryJob, SummaryStatus } from '../../api/types'
+import { ArrowIcon, PlusIcon } from '../../components/icons'
 import { Alert, Badge, Button, Card, Empty, formatDate, formatDateTime, PageHeader, SelectField, Spinner, TextField } from '../../components/ui'
 import { useLoad } from '../../hooks/useLoad'
 import { JobProgress } from './JobProgress'
@@ -96,9 +97,21 @@ export function Summaries() {
 
   return (
     <div>
-      <PageHeader title="Özetlerim" actions={<Button onClick={() => setCreating((c) => !c)}>{creating ? 'Kapat' : 'Yeni özet'}</Button>} />
+      <PageHeader
+        title="Özetlerim"
+        lede="Seçtiğin dönemin kayıtlarından, kendi cümlelerinle. Sen onaylayıp paylaşmadan kimse görmez."
+        actions={
+          <Button onClick={() => setCreating((c) => !c)} variant={creating ? 'secondary' : 'primary'}>
+            {creating ? 'Kapat' : (
+              <>
+                <PlusIcon /> Yeni özet
+              </>
+            )}
+          </Button>
+        }
+      />
       {creating && (
-        <Card className="mb-5">
+        <Card className="mb-6">
           <GeneratePanel onFinished={reload} initialAppointmentId={preselected} />
         </Card>
       )}
@@ -106,22 +119,34 @@ export function Summaries() {
       {loading ? (
         <Spinner />
       ) : data && data.length === 0 ? (
-        <Empty>Henüz özet yok.</Empty>
+        <Empty
+          title="Henüz özet yok"
+          action={
+            creating ? null : (
+              <Button onClick={() => setCreating(true)}>
+                <PlusIcon /> İlk özetini hazırla
+              </Button>
+            )
+          }
+        >
+          Randevundan önce bir dönem seç; AI yalnızca o dönemdeki kayıtlarını toparlar, her cümlenin hangi kayıtlara dayandığını gösterir.
+        </Empty>
       ) : (
-        <ul className="space-y-3">
+        <ul className="divide-y divide-line overflow-hidden rounded-soft-lg border border-line bg-surface">
           {data?.map((s) => (
             <li key={s.id}>
-              <Card>
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <Link to={`/client/summaries/${s.id}`} className="link inline-flex min-h-11 items-center">
-                    {s.title}
-                  </Link>
-                  <Badge tone={STATUS_TONE[s.status]}>{STATUS_LABEL[s.status]}</Badge>
+              <Link to={`/client/summaries/${s.id}`} className="group flex items-center gap-4 px-4 py-4 hover:bg-brand-50 sm:px-5">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <span className="text-lg font-bold text-ink group-hover:underline group-hover:underline-offset-4">{s.title}</span>
+                    <Badge tone={STATUS_TONE[s.status]}>{STATUS_LABEL[s.status]}</Badge>
+                  </div>
+                  <p className="num mt-1 text-[0.9375rem] text-muted">
+                    {formatDate(s.period_start)} – {formatDate(s.period_end)} · {s.statements.length} ifade
+                  </p>
                 </div>
-                <p className="mt-1 text-xs text-muted">
-                  {formatDate(s.period_start)} – {formatDate(s.period_end)}
-                </p>
-              </Card>
+                <ArrowIcon className="shrink-0 text-brand-600" />
+              </Link>
             </li>
           ))}
         </ul>

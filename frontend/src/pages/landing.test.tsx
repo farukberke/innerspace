@@ -24,7 +24,7 @@ function renderHome() {
 describe('landing page', () => {
   it('shows the h1, the demo link and the synthetic-data warning to anonymous visitors', async () => {
     renderHome()
-    expect(await screen.findByRole('heading', { level: 1, name: /seanslar arası defter/ })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 1, name: /Seanslar arası defter/ })).toBeInTheDocument()
     expect(screen.getByRole('note')).toHaveTextContent('yalnızca sentetik veri')
     expect(screen.getAllByRole('link', { name: 'Demoyu aç' })[0]).toHaveAttribute('href', '/login')
     expect(screen.getByRole('link', { name: 'İçeriğe geç' })).toHaveAttribute('href', '#main')

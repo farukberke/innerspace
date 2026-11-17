@@ -70,7 +70,7 @@ function ClientPlan({ clientId }: { clientId: string }) {
   const { data, error, loading } = useLoad(load)
   if (loading) return <Spinner />
   if (error) return <Alert>{error}</Alert>
-  if (!data) return <Empty>Danışan planını seninle paylaşmadı.</Empty>
+  if (!data) return <Empty title="Plan paylaşılmadı.">Danışan Planım sayfasını seninle paylaştığında, salt okunur olarak burada görünür.</Empty>
   return (
     <div>
       <p className="text-xs text-muted">Salt okunur · Paylaşım: {formatDateTime(data.shared_at)} · Danışan paylaşımı geri alabilir.</p>
@@ -156,12 +156,12 @@ export function ClinicianClientDetail() {
         {loading ? (
           <Spinner />
         ) : data && data.length === 0 ? (
-          <Empty>Henüz randevu yok.</Empty>
+          <Empty title="Henüz randevu yok.">“Randevu oluştur” ile ekleyebilirsin; danışan kendi takviminde görür ve bir gün önce hatırlatılır.</Empty>
         ) : (
           <div className="space-y-6">
             <div>
               <h3 className="mb-2 text-base font-semibold text-ink-2">Yaklaşan</h3>
-              {upcoming.length ? list(upcoming, true) : <Empty>Yaklaşan randevu yok.</Empty>}
+              {upcoming.length ? list(upcoming, true) : <Empty title="Yaklaşan randevu yok.">Geçmiş randevular aşağıda.</Empty>}
             </div>
             {past.length > 0 && (
               <div>

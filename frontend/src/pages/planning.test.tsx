@@ -141,10 +141,16 @@ function renderClientDetail() {
 
 describe('clinician client detail', () => {
   it('lists the next appointment on the client list', async () => {
-    mockFetch({ 'GET /clinician/clients': { body: [{ id: 'c1', display_name: 'Ayşe Y.', next_appointment_at: future }] } })
+    mockFetch({
+      'GET /clinician/clients': {
+        body: [{ id: 'c1', display_name: 'Ayşe Y.', next_appointment_at: future, last_shared_at: null, new_summaries: 0 }],
+      },
+    })
     inRouter(<ClinicianClients />)
-    expect(await screen.findByText(/Sonraki randevu/)).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Ayşe Y.' })).toHaveAttribute('href', '/clinician/clients/c1')
+    const link = await screen.findByRole('link', { name: /Ayşe Y\./ })
+    expect(link).toHaveAttribute('href', '/clinician/clients/c1')
+    expect(link).toHaveTextContent('Sonraki randevu')
+    expect(link).toHaveTextContent('Henüz paylaşım yok')
   })
 
   it('creates, changes and cancels appointments and shows the shared plan read-only', async () => {
@@ -193,7 +199,7 @@ describe('clinician client detail', () => {
       'GET /clinician/clients/c1/plan': { status: 404, body: { detail: 'Plan not found' } },
     })
     renderClientDetail()
-    expect(await screen.findByText('Danışan planını seninle paylaşmadı.')).toBeInTheDocument()
+    expect(await screen.findByText('Plan paylaşılmadı.')).toBeInTheDocument()
   })
 })
 

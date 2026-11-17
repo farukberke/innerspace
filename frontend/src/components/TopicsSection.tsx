@@ -53,10 +53,10 @@ export function TopicsSection({ summary, onSaved }: { summary: Summary; onSaved:
   if (crisis) return <CrisisScreen crisis={crisis} onClose={() => setCrisis(null)} />
 
   return (
-    <section aria-labelledby="topics-title" className="mb-4">
+    <section aria-labelledby="topics-title">
       <Card>
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 id="topics-title" className="text-base font-semibold text-ink">
+          <h2 id="topics-title" className="text-[1.0625rem] font-extrabold text-ink">
             Konuşmak istediğim konular
           </h2>
           {!editing && !shared && (
@@ -99,7 +99,7 @@ export function TopicsSection({ summary, onSaved }: { summary: Summary; onSaved:
             <p className="text-xs text-muted">En fazla {MAX_TOPICS} konu, her biri {MAX_LEN} karakter. Kaydetmek özeti taslağa döndürür; yeniden onaylaman gerekir.</p>
           </div>
         ) : summary.topics.length > 0 ? (
-          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-ink">
+          <ul className="mt-3 list-disc space-y-1.5 pl-5 text-base text-ink marker:text-brand-600">
             {summary.topics.map((t, i) => (
               <li key={i} className="break-words">
                 {t}

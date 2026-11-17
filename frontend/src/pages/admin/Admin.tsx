@@ -52,7 +52,7 @@ export function AdminUsers() {
       {loading ? (
         <Spinner />
       ) : data && data.length === 0 ? (
-        <Empty>Kullanıcı bulunamadı.</Empty>
+        <Empty title="Kullanıcı bulunamadı.">Uzmanları ve danışanları “Davet et” ile ekleyebilirsin; davet kabul edilince burada görünürler.</Empty>
       ) : (
         <ul className="space-y-3">
           {data?.map((u) => (
@@ -146,7 +146,7 @@ export function AdminAssignments() {
       {assignments.loading ? (
         <Spinner />
       ) : assignments.data && assignments.data.length === 0 ? (
-        <Empty>Henüz atama yok.</Empty>
+        <Empty title="Henüz atama yok.">Bir uzmanı bir danışana atadığında uzman, o danışanın paylaştığı özetleri görmeye başlar.</Empty>
       ) : (
         <ul className="space-y-3">
           {assignments.data?.map((a) => (

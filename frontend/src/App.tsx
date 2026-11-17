@@ -7,6 +7,7 @@ import { AfterSession } from './pages/client/AfterSession'
 import { Account } from './pages/client/Account'
 import { Appointments } from './pages/client/Appointments'
 import { Entries } from './pages/client/Entries'
+import { Home } from './pages/client/Home'
 import { Moment } from './pages/client/Moment'
 import { Plan } from './pages/client/Plan'
 import { Summaries } from './pages/client/Summaries'
@@ -24,7 +25,8 @@ export function App() {
       <Route path="/accept-invitation" element={<AcceptInvitation />} />
       <Route element={<RequireRole role="client" />}>
         <Route element={<Layout />}>
-          <Route path="/client" element={<Navigate to="/client/entries" replace />} />
+          <Route path="/client" element={<Navigate to="/client/home" replace />} />
+          <Route path="/client/home" element={<Home />} />
           <Route path="/client/entries" element={<Entries />} />
           <Route path="/client/summaries" element={<Summaries />} />
           <Route path="/client/summaries/:id" element={<SummaryDetail />} />

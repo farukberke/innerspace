@@ -84,7 +84,7 @@ export function AfterSession() {
       {loading ? (
         <Spinner />
       ) : data && data.length === 0 ? (
-        <Empty>Henüz seans sonrası notun yok.</Empty>
+        <Empty title="Henüz seans sonrası notun yok.">Seanstan çıkınca aklında kalanı iki dakikada yaz: konuştuklarınız, denemek istediklerin, sonraki seansa soruların. AI yalnızca bu üç başlığa ayırır.</Empty>
       ) : (
         <ul className="space-y-3">
           {data?.map((n) => (

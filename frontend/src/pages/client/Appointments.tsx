@@ -40,14 +40,14 @@ export function Appointments() {
       {loading ? (
         <Spinner />
       ) : data && data.length === 0 ? (
-        <Empty>Henüz randevu yok.</Empty>
+        <Empty title="Henüz randevu yok.">Randevularını uzmanın ekler. Eklendiğinde burada görünür; seanstan bir gün önce özet hazırlaman için hatırlatılır.</Empty>
       ) : (
         <div className="space-y-6">
           <section aria-labelledby="upcoming-title">
             <h2 id="upcoming-title" className="mb-2 text-base font-semibold text-ink-2">
               Yaklaşan
             </h2>
-            {upcoming.length ? list(upcoming) : <Empty>Yaklaşan randevu yok.</Empty>}
+            {upcoming.length ? list(upcoming) : <Empty title="Yaklaşan randevu yok.">Geçmiş randevuların aşağıda.</Empty>}
           </section>
           {past.length > 0 && (
             <section aria-labelledby="past-title">

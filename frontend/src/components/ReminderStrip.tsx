@@ -15,16 +15,19 @@ export function ReminderStrip() {
   const { data } = useLoad(useCallback(() => remindersApi.list(), []))
   if (!data || data.length === 0) return null
   return (
-    <ul aria-label="Hatırlatmalar" className="mb-4 space-y-2">
+    <ul aria-label="Hatırlatmalar" className="mb-5 space-y-2">
       {data.map((r) => {
         const action = ACTION[r.kind](r)
         return (
           <li
             key={`${r.kind}-${r.appointment_id}`}
-            className="flex flex-wrap items-center justify-between gap-2 rounded-soft bg-brand-50 px-4 py-3 text-sm text-brand-900"
+            className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-soft-lg bg-warn-100 px-4 py-3 text-base text-warn-900"
           >
-            <span>{r.message}</span>
-            <Link to={action.to} className="link">
+            <span className="flex items-center gap-3">
+              <span aria-hidden className="h-2.5 w-2.5 shrink-0 rounded-full bg-warn-300" />
+              {r.message}
+            </span>
+            <Link to={action.to} className="inline-flex min-h-11 items-center font-bold text-warn-900 underline underline-offset-4">
               {action.label}
             </Link>
           </li>

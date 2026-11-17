@@ -18,6 +18,12 @@ const user = (role: UserRole): User => ({
 })
 const pair = { access_token: 'a', refresh_token: 'r', token_type: 'bearer' }
 const emptyPage = { items: [], total: 0, limit: 10, offset: 0 }
+const clientHome = {
+  'GET /entries': { body: emptyPage },
+  'GET /appointments': { body: [] },
+  'GET /summaries': { body: [] },
+  'GET /reminders': { body: [] },
+}
 
 function renderAt(path: string) {
   return render(
@@ -42,7 +48,7 @@ describe('role based routing', () => {
   })
 
   it.each([
-    ['client', 'Kayıtlarım', { 'GET /entries': { body: emptyPage } }],
+    ['client', 'Merhaba Test.', clientHome],
     ['clinician', 'Danışanlarım', { 'GET /clinician/clients': { body: [] } }],
     ['org_admin', 'Kullanıcılar', { 'GET /admin/users': { body: [] } }],
   ] as const)('login as %s lands on that role home', async (role, heading, extra) => {
@@ -88,10 +94,10 @@ describe('role based routing', () => {
     mockFetch({
       'POST /auth/refresh': { body: pair },
       'GET /auth/me': { body: user('client') },
-      'GET /entries': { body: emptyPage },
+      ...clientHome,
     })
     renderAt('/admin/users')
-    await waitFor(() => expect(screen.getByRole('heading', { name: 'Kayıtlarım' })).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Merhaba Test.' })).toBeInTheDocument())
   })
 
   it('logs out back to the login page', async () => {

@@ -6,6 +6,8 @@ import type {
   Assignment,
   ClientRead,
   CrisisInfo,
+  DemoLoginStatus,
+  DemoRole,
   Entry,
   EntryInput,
   EntryKind,
@@ -38,13 +40,20 @@ export const authApi = {
       // network/server error: the caller still ends the local session
     }
   },
+  /** One-click demo sign-in to a seeded demo-clinic account (only where the backend enables it). */
+  async demoLogin(role: DemoRole): Promise<void> {
+    const pair = await request<TokenPair>('/auth/demo-login', { method: 'POST', body: { role }, auth: false })
+    tokens.set(pair)
+  },
+  demoStatus: () => request<DemoLoginStatus>('/auth/demo-login', { auth: false }),
   me: () => request<User>('/auth/me'),
   acceptInvitation: (token: string, password: string, display_name: string) =>
     request<User>('/auth/accept-invitation', { method: 'POST', body: { token, password, display_name }, auth: false }),
 }
 
 export const entriesApi = {
-  list: (q: { kind?: EntryKind; limit: number; offset: number }) => request<EntryPage>('/entries', { query: q }),
+  list: (q: { kind?: EntryKind; from?: string; to?: string; limit: number; offset: number }) =>
+    request<EntryPage>('/entries', { query: q }),
   create: (body: EntryInput) => request<Entry>('/entries', { method: 'POST', body }),
   update: (id: string, body: Partial<Omit<EntryInput, 'kind'>>) =>
     request<Entry>(`/entries/${id}`, { method: 'PATCH', body }),
