@@ -33,6 +33,30 @@ def _error_location(exc: BaseException) -> str:
     return f"{os.path.basename(last.filename)}:{last.lineno} in {last.name}"
 
 
+_SECURITY_HEADERS = {
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Referrer-Policy": "no-referrer",
+}
+# Production only: the dev-only /docs page needs scripts and styles from a CDN.
+_PRODUCTION_HEADERS = {
+    # A JSON API: nothing may be loaded, framed or executed from its responses.
+    "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none'",
+    "Strict-Transport-Security": "max-age=63072000; includeSubDomains",
+}
+
+
+def _add_security_headers(request: Request, response: Response) -> None:
+    for name, value in _SECURITY_HEADERS.items():
+        response.headers.setdefault(name, value)
+    if request.app.state.settings.is_production:
+        for name, value in _PRODUCTION_HEADERS.items():
+            response.headers.setdefault(name, value)
+    # API responses carry personal data: never stored by browsers or shared caches.
+    if request.url.path.startswith("/api/"):
+        response.headers.setdefault("Cache-Control", "no-store")
+
+
 class RequestContextMiddleware(BaseHTTPMiddleware):
     """Assigns a request ID, logs one line per request, records metrics and hides unhandled
     error details (clients get an error_code and the request ID; logs get no content)."""
@@ -77,6 +101,7 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
                 },
             )
             response.headers[REQUEST_ID_HEADER] = request_id
+            _add_security_headers(request, response)
             return response
         finally:
             request_id_var.reset(token)

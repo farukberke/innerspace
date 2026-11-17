@@ -13,6 +13,26 @@ services:
       - type: rewrite
         source: /*
         destination: /index.html
+    # Security headers. If VITE_API_URL changes, update connect-src in the CSP to match.
+    headers:
+      - path: /*
+        name: Strict-Transport-Security
+        value: max-age=63072000; includeSubDomains
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+      - path: /*
+        name: Permissions-Policy
+        value: camera=(), microphone=(), geolocation=(), payment=()
+      - path: /*
+        name: Content-Security-Policy
+        value: "default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://api.seansarasi.online; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
     envVars:
       - key: VITE_API_URL # public API URL, e.g. https://innerspace-api.onrender.com (build time)
         sync: false
