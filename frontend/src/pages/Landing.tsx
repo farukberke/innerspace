@@ -4,7 +4,7 @@ import { HOME_BY_ROLE } from '../auth/roles'
 import { ArrowIcon } from '../components/icons'
 import { DemoBanner, Logo, SkipLink } from '../components/Layout'
 import { Mark, type MarkKind } from '../components/Mark'
-import { buttonCls, Spinner } from '../components/ui'
+import { Spinner } from '../components/ui'
 
 /** Synthetic rendering of the product's own surfaces. Not interactive, labelled as an example. */
 const SAMPLE_DAYS: { sleep: number; attacks: number[] }[] = [
@@ -128,13 +128,12 @@ export function Landing() {
               </p>
               <div className="mt-9 flex flex-col gap-3 sm:flex-row">
                 <Link to="/login" className="btn inline-flex min-h-12 items-center justify-center gap-2 rounded-soft bg-white px-6 text-base font-extrabold text-brand-700 hover:bg-brand-50">
-                  Demoyu aç <ArrowIcon />
+                  Giriş yap <ArrowIcon />
                 </Link>
                 <a href="#nasil" className="btn inline-flex min-h-12 items-center justify-center rounded-soft border border-white/40 px-6 text-base font-bold hover:bg-white/10">
                   Nasıl çalışır
                 </a>
               </div>
-              <p className="mt-5 text-[0.9375rem] text-brand-100">Danışan, uzman ve klinik yöneticisi olarak tek tıkla gir. Portföy projesi; yalnızca sentetik veri.</p>
             </div>
             <ProductSample />
           </section>
@@ -215,20 +214,9 @@ export function Landing() {
         </div>
       </section>
 
-      <section aria-labelledby="kapanis-h" className="py-20 lg:py-24">
-        <div className={`${wrap} flex flex-col items-start gap-6 sm:flex-row sm:items-center sm:justify-between`}>
-          <h2 id="kapanis-h" className="text-[2rem] font-extrabold leading-[1.05] [font-stretch:112%] sm:text-[2.5rem]">
-            Üç rolü de bir dakikada gez.
-          </h2>
-          <Link to="/login" className={buttonCls('primary', 'min-h-12 px-6 text-base')}>
-            Demoyu aç <ArrowIcon />
-          </Link>
-        </div>
-      </section>
-
       <footer className="border-t border-line py-8">
         <div className={`${wrap} flex flex-col gap-2 text-[0.9375rem] text-ink-2 sm:flex-row sm:justify-between`}>
-          <p>InnerSpace · portföy projesi. Gerçek kişisel veya sağlık bilgisi girme.</p>
+          <p>InnerSpace · Gerçek kişisel veya sağlık bilgisi girme.</p>
           <p>Tıbbi tavsiye vermez; teşhis veya tedavi aracı değildir.</p>
         </div>
       </footer>
