@@ -73,13 +73,15 @@ async def get_own(session: AsyncSession, client: User, appointment_id: uuid.UUID
 async def list_for_client(
     session: AsyncSession, clinician: User, client_id: uuid.UUID
 ) -> list[AppointmentRow]:
-    """All appointments of an assigned client."""
+    """This clinician's own appointments with an assigned client. Appointments with other
+    clinicians stay private to the client (who sees a client's other care is theirs to share)."""
     await people.get_assigned_client(session, clinician, client_id)
     query = (
         _with_clinician_name()
         .where(
             Appointment.client_id == client_id,
             Appointment.organization_id == clinician.organization_id,
+            Appointment.clinician_id == clinician.id,
         )
         .order_by(Appointment.scheduled_at.desc(), Appointment.id)
     )

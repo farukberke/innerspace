@@ -624,3 +624,23 @@ async def test_seed_creates_plans_and_shared_plan(
     await reset_demo(db_session)
     assert list(await db_session.scalars(select(SupportPlan))) == []
     assert await seed(db_session, password="seed-password-123")
+
+
+async def test_clinician_sees_only_own_appointments_with_a_shared_client(
+    http: AsyncClient, acting, w: World, db_session: AsyncSession
+) -> None:
+    # `client` is assigned to both clinicians; each sees only their own appointments.
+    db_session.add(
+        CareAssignment(organization_id=w.org_a.id, clinician_id=w.clin2.id, client_id=w.client.id)
+    )
+    await db_session.flush()
+    mine = await _clinic(http, acting, w)
+    theirs = await _clinic_for(http, acting, w.clin2, w.client)
+    url = f"{API}/clinician/clients/{w.client.id}/appointments"
+    acting.user = w.clin
+    assert [a["id"] for a in (await http.get(url)).json()] == [mine["id"]]
+    acting.user = w.clin2
+    assert [a["id"] for a in (await http.get(url)).json()] == [theirs]
+    # The client still sees both.
+    acting.user = w.client
+    assert len((await http.get(f"{API}/appointments")).json()) == 2
