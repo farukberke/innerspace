@@ -134,27 +134,25 @@ export function Spinner() {
   return (
     <p role="status" className="flex items-center justify-center gap-2 py-12 text-base text-muted">
       <span aria-hidden className="inline-flex gap-1">
-        <span className="h-2 w-2 animate-pulse rounded-full bg-attack" />
-        <span className="h-2 w-2 animate-pulse rounded-full bg-sleep [animation-delay:150ms]" />
-        <span className="h-2 w-2 animate-pulse rounded-full bg-brand-600 [animation-delay:300ms]" />
+        <span className="h-2 w-2 animate-pulse rounded-full bg-brand-600" />
+        <span className="h-2 w-2 animate-pulse rounded-full bg-brand-400 [animation-delay:150ms]" />
+        <span className="h-2 w-2 animate-pulse rounded-full bg-brand-200 [animation-delay:300ms]" />
       </span>
       Yükleniyor…
     </p>
   )
 }
 
-/** An empty state: what is missing, why it matters, and the next step. The composition of
- *  marks is the product's own illustration language. */
+/** An empty state: what is missing, why it matters, and the next step. */
 export function Empty({ title, children, action }: { title?: string; children: ReactNode; action?: ReactNode }) {
   return (
     <div className="flex flex-col items-start gap-4 rounded-soft-lg border border-dashed border-line-strong bg-surface/60 px-5 py-8 sm:flex-row sm:items-center sm:gap-6 sm:px-8">
-      <svg viewBox="0 0 72 48" width="72" height="48" aria-hidden className="shrink-0">
-        <rect x="2" y="20" width="10" height="26" rx="1.5" fill="var(--color-sleep)" opacity=".35" />
-        <rect x="16" y="12" width="10" height="34" rx="1.5" fill="var(--color-sleep)" opacity=".35" />
-        <circle cx="45" cy="16" r="10" fill="none" stroke="var(--color-line-strong)" strokeWidth="2" strokeDasharray="3 3" />
-        <rect x="60" y="34" width="10" height="12" rx="1.5" fill="var(--color-line-strong)" opacity=".6" />
-        <path d="M0 46.5h72" stroke="var(--color-ink)" strokeWidth="1" />
-      </svg>
+      <span aria-hidden className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-brand-50 text-brand-600">
+        <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
+          <rect x="5" y="3" width="14" height="18" rx="1.5" />
+          <path d="M9 8h6M9 12h6M9 16h3" />
+        </svg>
+      </span>
       <div className="min-w-0">
         {title && <p className="text-lg font-bold text-ink">{title}</p>}
         <div className="mt-1 max-w-[56ch] text-base text-ink-2">{children}</div>

@@ -1,63 +1,63 @@
 @import "tailwindcss";
 
-/* InnerSpace: Turkish graphic modernism as a working product. Cobalt owns the shell, each record
-   kind owns one mark colour (attack = vermilion, sleep = ochre, medication = green, avoidance =
-   ink ring), everything else is ink on cool paper with 1px hairlines. One family: Archivo. */
+/* InnerSpace: a calm therapy-room palette. Soft cobalt owns the shell; data marks keep one colour
+   per record kind (attack = coral, sleep = sand gold, medication = sage, avoidance = ink ring) and
+   appear only where they encode data. Ink on warm off-white with 1px hairlines. One family: Archivo. */
 @theme {
   --font-sans: "Archivo", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Archivo", ui-sans-serif, system-ui, sans-serif;
 
-  --color-paper: #f4f4f0;
+  --color-paper: #f6f4ef;
   --color-surface: #ffffff;
-  --color-sunk: #eaeae4;
-  --color-line: #d9dad4;
-  --color-line-strong: #a3a59d;
-  --color-ink: #15172a;
-  --color-ink-2: #383b50;
-  --color-muted: #565a6e;
+  --color-sunk: #ece8e0;
+  --color-line: #dedad1;
+  --color-line-strong: #a9a69c;
+  --color-ink: #1b2133;
+  --color-ink-2: #3a4152;
+  --color-muted: #5a6070;
 
   /* Cobalt: shell, primary actions, the appointment field. */
-  --color-brand-50: #eef1fb;
-  --color-brand-100: #dce2f6;
-  --color-brand-200: #b7c3ec;
-  --color-brand-300: #8d9fe0;
-  --color-brand-400: #4e64c2;
-  --color-brand-500: #3149ae;
-  --color-brand-600: #22389a;
-  --color-brand-700: #1b2d7e;
-  --color-brand-800: #152366;
-  --color-brand-900: #0f1a4d;
+  --color-brand-50: #eef1f8;
+  --color-brand-100: #dde3f0;
+  --color-brand-200: #bac6e0;
+  --color-brand-300: #94a6cc;
+  --color-brand-400: #5f78ae;
+  --color-brand-500: #3f5a97;
+  --color-brand-600: #2f4a8a;
+  --color-brand-700: #263d73;
+  --color-brand-800: #1e3060;
+  --color-brand-900: #172449;
 
   /* Vermilion: attacks, "O an", destructive actions. */
-  --color-danger-50: #fdeeea;
-  --color-danger-100: #fadbd3;
-  --color-danger-200: #f2b4a6;
-  --color-danger-600: #c93a22;
-  --color-danger-700: #a82f1b;
-  --color-danger-800: #85240f;
+  --color-danger-50: #fbefeb;
+  --color-danger-100: #f6dcd4;
+  --color-danger-200: #ecb9aa;
+  --color-danger-600: #b8452f;
+  --color-danger-700: #9a3926;
+  --color-danger-800: #7b2d1e;
 
   /* Ochre: sleep, drafts, gentle notices. */
-  --color-warn-50: #fcf5e3;
-  --color-warn-100: #f8e8be;
-  --color-warn-200: #efd38a;
-  --color-warn-300: #e0a526;
-  --color-warn-800: #6b4d04;
-  --color-warn-900: #4a3503;
+  --color-warn-50: #fbf5e8;
+  --color-warn-100: #f4e8cc;
+  --color-warn-200: #e9d29f;
+  --color-warn-300: #d6a84e;
+  --color-warn-800: #6b4d12;
+  --color-warn-900: #4a360c;
 
-  --color-info-50: #eef1fb;
-  --color-info-200: #b7c3ec;
-  --color-info-800: #152366;
+  --color-info-50: #eef1f8;
+  --color-info-200: #bac6e0;
+  --color-info-800: #1e3060;
 
   /* Green: medication, shared. */
-  --color-ok-50: #e8f4ee;
-  --color-ok-100: #cfe9dc;
-  --color-ok-200: #a3d3ba;
-  --color-ok-800: #1d5c42;
+  --color-ok-50: #edf4f0;
+  --color-ok-100: #d8e9e0;
+  --color-ok-200: #b2d3c2;
+  --color-ok-800: #2e5c4a;
 
   /* Mark colours (graphic only, never body text). */
-  --color-attack: #e2492f;
-  --color-sleep: #e0a526;
-  --color-med: #2f8f6b;
+  --color-attack: #d9705a;
+  --color-sleep: #d6a84e;
+  --color-med: #5e9a82;
 
   --radius-soft: 0.375rem;
   --radius-soft-lg: 0.5rem;
@@ -74,8 +74,7 @@
     font-feature-settings: "tnum" 0;
   }
   h1 {
-    font-weight: 800;
-    font-stretch: 112%;
+    font-weight: 750;
     letter-spacing: -0.02em;
     text-wrap: balance;
   }
@@ -106,8 +105,7 @@
 
 /* Wide, heavy display voice of the poster tradition. */
 .display {
-  font-weight: 800;
-  font-stretch: 118%;
+  font-weight: 750;
   letter-spacing: -0.02em;
   line-height: 1;
 }

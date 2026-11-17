@@ -76,7 +76,7 @@ export function SummaryReading({ sections }: { sections: ReadingSection[] }) {
         return (
           <section key={i} aria-label={sec.heading ?? undefined}>
             {sec.heading && (
-              <h2 className="flex items-center gap-2.5 border-b border-ink pb-2 text-[1.0625rem] font-extrabold [font-stretch:110%]">
+              <h2 className="flex items-center gap-2.5 border-b border-ink pb-2 text-[1.0625rem] font-extrabold">
                 {mark && <Mark kind={mark} size={14} />}
                 {sec.heading}
               </h2>

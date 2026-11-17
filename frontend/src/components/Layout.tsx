@@ -34,15 +34,24 @@ export function SkipLink() {
   )
 }
 
-/** The brand mark: an attack disc and a sleep bar, the two marks the product is built around. */
+/** The brand mark: two armchairs facing each other, the session the notebook prepares for. */
+export function LogoMark({ inverted = false, size = 30 }: { inverted?: boolean; size?: number }) {
+  const left = inverted ? '#F6F4EF' : 'var(--color-brand-600)'
+  return (
+    <svg viewBox="0 0 32 32" width={size} height={size} aria-hidden className="shrink-0">
+      <path d="M3 9.5a3 3 0 0 1 5.9-.8L10.3 14h1.9a2.6 2.6 0 0 1 2.6 2.6V21H5.3Z" fill={left} />
+      <path d="M29 9.5a3 3 0 0 0-5.9-.8L21.7 14h-1.9a2.6 2.6 0 0 0-2.6 2.6V21h9.5Z" fill="#E3A796" />
+      <path d="M6 21v4M13 21v4M19 21v4M26 21v4" stroke={left} strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M19 21v4M26 21v4" stroke="#E3A796" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  )
+}
+
 export function Logo({ inverted = false, className = '' }: { inverted?: boolean; className?: string }) {
   return (
     <span className={`inline-flex items-center gap-2.5 ${className}`}>
-      <svg viewBox="0 0 28 28" width="28" height="28" aria-hidden className="shrink-0">
-        <circle cx="10" cy="11" r="8" fill="var(--color-attack)" />
-        <rect x="16" y="13" width="9" height="13" rx="1.5" fill="var(--color-sleep)" />
-      </svg>
-      <span className={`text-[1.375rem] font-extrabold tracking-tight [font-stretch:118%] ${inverted ? 'text-white' : 'text-ink'}`}>
+      <LogoMark inverted={inverted} />
+      <span className={`text-[1.375rem] font-extrabold tracking-tight ${inverted ? 'text-white' : 'text-ink'}`}>
         InnerSpace
       </span>
     </span>
@@ -95,7 +104,7 @@ function MomentButton({ withHint = false, className = '' }: { withHint?: boolean
       aria-label="O an: zor bir an için planın"
       className={`btn inline-flex min-h-11 flex-col items-start justify-center rounded-soft bg-danger-600 px-4 py-1.5 leading-tight hover:bg-danger-700 ${className}`}
     >
-      <span className="text-lg font-extrabold text-white [font-stretch:115%]">O an</span>
+      <span className="text-lg font-extrabold text-white">O an</span>
       {withHint && <span className="text-[0.8125rem] font-semibold text-white">Zor bir an için planın</span>}
     </Link>
   )

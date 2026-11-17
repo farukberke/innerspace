@@ -6,22 +6,12 @@ import { HOME_BY_ROLE } from '../auth/roles'
 import { DemoBanner, Logo, SkipLink } from '../components/Layout'
 import { Alert, Button, Spinner, TextField } from '../components/ui'
 
-/** The poster panel beside every auth form: the product's marks at poster scale. */
-function PosterPanel() {
+/** The illustration beside every auth form: the room the notebook prepares for. */
+function RoomPanel() {
   return (
-    <div aria-hidden className="relative hidden overflow-hidden bg-brand-600 lg:block">
-      <svg viewBox="0 0 600 900" preserveAspectRatio="xMidYMid slice" className="absolute inset-0 h-full w-full">
-        <circle cx="430" cy="250" r="170" fill="var(--color-attack)" />
-        <circle cx="170" cy="470" r="70" fill="var(--color-attack)" />
-        <rect x="70" y="600" width="70" height="300" fill="var(--color-sleep)" />
-        <rect x="170" y="560" width="70" height="340" fill="var(--color-sleep)" />
-        <rect x="270" y="660" width="70" height="240" fill="var(--color-sleep)" />
-        <rect x="370" y="540" width="70" height="360" fill="var(--color-sleep)" />
-        <rect x="470" y="620" width="70" height="280" fill="var(--color-sleep)" />
-        <circle cx="300" cy="420" r="34" fill="none" stroke="#fff" strokeWidth="10" />
-        <rect x="455" y="470" width="50" height="50" fill="var(--color-med)" />
-      </svg>
-      <p className="absolute left-12 right-12 top-14 text-[2.75rem] font-extrabold leading-[1.02] text-white [font-stretch:118%]">
+    <div className="relative hidden overflow-hidden bg-sunk lg:block">
+      <img src="/login-room.webp" alt="" width={1024} height={1536} className="absolute inset-0 h-full w-full object-cover object-bottom" />
+      <p className="absolute left-12 right-12 top-14 max-w-[14ch] text-[2.5rem] font-extrabold leading-[1.05] text-ink">
         Seanslar arası defterin.
       </p>
     </div>
@@ -32,7 +22,7 @@ export function AuthShell({ title, lede, children }: { title: string; lede?: Rea
   return (
     <div className="min-h-screen lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
       <SkipLink />
-      <PosterPanel />
+      <RoomPanel />
       <div className="flex min-h-screen flex-col">
         <DemoBanner />
         <main id="main" tabIndex={-1} className="mx-auto flex w-full max-w-[30rem] flex-1 flex-col px-5 pb-12 pt-8 focus:outline-none sm:pt-14">

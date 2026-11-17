@@ -65,15 +65,15 @@ function ProductSample() {
   )
 }
 
-const STEPS: { mark: MarkKind; title: string; body: string }[] = [
-  { mark: 'quick', title: 'Arada kaydet', body: 'Günlük not, uyku, panik atağı, ilaç ve kaçınma. Otuz saniye sürer; kayıtları yalnızca danışan görür.' },
+const STEPS: { image: string; title: string; body: string }[] = [
+  { image: '/step-record.webp', title: 'Arada kaydet', body: 'Günlük not, uyku, panik atağı, ilaç ve kaçınma. Otuz saniye sürer; kayıtları yalnızca danışan görür.' },
   {
-    mark: 'panic',
+    image: '/step-summary.webp',
     title: 'Seanstan önce özetle',
     body: 'AI yalnızca seçilen dönemin kayıtlarını toparlar. Her cümle dayandığı kayıtları gösterir; yorum, teşhis ya da öneri eklemez.',
   },
-  { mark: 'medication', title: 'Danışan onaylasın, uzman okusun', body: 'Danışan düzenler ve onaylar. Paylaştığında atanmış uzman okur; paylaşım her an geri alınabilir.' },
-  { mark: 'avoidance', title: 'Seansta konuşulanı unutma', body: 'Seans sonrası iki dakikalık not; zor anlar için uzmanla hazırlanan “O an” kartı.' },
+  { image: '/step-share.webp', title: 'Danışan onaylasın, uzman okusun', body: 'Danışan düzenler ve onaylar. Paylaştığında atanmış uzman okur; paylaşım her an geri alınabilir.' },
+  { image: '/step-after.webp', title: 'Seansta konuşulanı unutma', body: 'Seans sonrası iki dakikalık not; zor anlar için uzmanla hazırlanan “O an” kartı.' },
 ]
 
 const ROLES = [
@@ -142,7 +142,7 @@ export function Landing() {
 
       <section id="nasil" aria-labelledby="nasil-h" className="py-20 lg:py-28">
         <div className={wrap}>
-          <h2 id="nasil-h" className="max-w-[18ch] text-[2.25rem] font-extrabold leading-[1.02] [font-stretch:112%] sm:text-[3rem]">
+          <h2 id="nasil-h" className="max-w-[18ch] text-[2.25rem] font-extrabold leading-[1.02] sm:text-[3rem]">
             Haftada 50 dakika seans, arada bir hafta hayat.
           </h2>
           <p className="mt-5 max-w-[60ch] text-lg text-ink-2">
@@ -151,7 +151,7 @@ export function Landing() {
           <ol className="mt-14 grid gap-x-8 gap-y-10 border-t border-ink pt-8 sm:grid-cols-2 lg:grid-cols-4">
             {STEPS.map((s) => (
               <li key={s.title}>
-                <Mark kind={s.mark} size={28} />
+                <img src={s.image} alt="" width={320} height={320} loading="lazy" className="aspect-square w-full max-w-[13rem] object-cover mix-blend-multiply [mask-image:radial-gradient(closest-side,black_72%,transparent)]" />
                 <h3 className="mt-4 text-xl font-extrabold">{s.title}</h3>
                 <p className="mt-2 text-base leading-relaxed text-ink-2">{s.body}</p>
               </li>
@@ -160,27 +160,24 @@ export function Landing() {
         </div>
       </section>
 
-      <section aria-label="Kapak" className="relative overflow-hidden bg-brand-600">
+      <section aria-label="Kapak" className="relative overflow-hidden bg-sunk">
         <img
           src="/landing-cover.webp"
           alt=""
-          width={1448}
-          height={1086}
+          width={1536}
+          height={1024}
           loading="lazy"
-          className="h-[22rem] w-full object-cover object-bottom sm:h-[30rem] lg:h-[36rem]"
-          onError={(e) => (e.currentTarget.style.display = 'none')}
+          className="h-[24rem] w-full object-cover object-right sm:h-[32rem] lg:h-[38rem]"
         />
-        <p className="absolute left-0 right-0 top-0 mx-auto max-w-6xl px-4 pt-10 text-[2rem] font-extrabold leading-[1.02] text-white [font-stretch:115%] sm:px-6 sm:pt-14 sm:text-[3.25rem] lg:px-8">
-          Seansta konuşulan unutulmasın;
-          <br />
-          seanslar arası yaşanan da.
+        <p className="absolute left-0 right-0 top-0 mx-auto max-w-6xl px-4 pt-10 text-[2rem] font-extrabold leading-[1.05] text-ink sm:px-6 sm:pt-14 sm:text-[3rem] lg:px-8">
+          <span className="block max-w-[11ch] sm:max-w-[14ch]">Seansta konuşulan unutulmasın; seanslar arası yaşanan da.</span>
         </p>
       </section>
 
       <section id="roller" aria-labelledby="roller-h" className="py-20 lg:py-28">
         <div className={`${wrap} grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]`}>
           <div>
-            <h2 id="roller-h" className="text-[2.25rem] font-extrabold leading-[1.02] [font-stretch:112%] sm:text-[3rem]">
+            <h2 id="roller-h" className="text-[2.25rem] font-extrabold leading-[1.02] sm:text-[3rem]">
               Klinik, uzman, danışan.
             </h2>
             <p className="mt-5 max-w-[46ch] text-lg text-ink-2">
@@ -200,7 +197,7 @@ export function Landing() {
 
       <section id="kurallar" aria-labelledby="kurallar-h" className="bg-ink py-20 text-white lg:py-28">
         <div className={wrap}>
-          <h2 id="kurallar-h" className="max-w-[20ch] text-[2.25rem] font-extrabold leading-[1.02] [font-stretch:112%] sm:text-[3rem]">
+          <h2 id="kurallar-h" className="max-w-[20ch] text-[2.25rem] font-extrabold leading-[1.02] sm:text-[3rem]">
             Kurallar sunucuda; yapay zekânın kararına bırakılmaz.
           </h2>
           <ul className="mt-12 grid gap-x-10 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
