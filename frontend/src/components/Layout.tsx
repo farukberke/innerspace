@@ -87,13 +87,16 @@ function initials(name: string): string {
     .join('')
 }
 
-function MomentButton({ className = '' }: { className?: string }) {
+/** The "O an" card: the client's own plan for a hard moment. Present everywhere, never alarming. */
+function MomentButton({ withHint = false, className = '' }: { withHint?: boolean; className?: string }) {
   return (
     <Link
       to="/client/moment"
-      className={`btn inline-flex min-h-11 items-center justify-center gap-2 rounded-soft bg-danger-600 px-4 font-extrabold text-white hover:bg-danger-700 ${className}`}
+      aria-label="O an: zor bir an için planın"
+      className={`btn inline-flex min-h-11 flex-col items-start justify-center rounded-soft border border-danger-200 bg-danger-50 px-4 py-1.5 leading-tight text-danger-800 hover:bg-danger-100 ${className}`}
     >
-      <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-white" />O an
+      <span className="text-base font-extrabold">O an</span>
+      {withHint && <span className="text-[0.8125rem] font-semibold text-danger-700">Zor bir an için planın</span>}
     </Link>
   )
 }
@@ -214,7 +217,7 @@ export function Layout() {
           </ul>
         </nav>
         <div className="mt-auto space-y-4">
-          {user.role === 'client' && <MomentButton className="w-full text-lg" />}
+          {user.role === 'client' && <MomentButton withHint className="w-full" />}
           <div className="flex items-center gap-3 border-t border-white/20 pt-4">
             <span aria-hidden className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/15 text-[0.8125rem] font-bold">
               {initials(user.display_name)}

@@ -54,6 +54,7 @@ export const authApi = {
 export const entriesApi = {
   list: (q: { kind?: EntryKind; from?: string; to?: string; limit: number; offset: number }) =>
     request<EntryPage>('/entries', { query: q }),
+  get: (id: string) => request<Entry>(`/entries/${id}`),
   create: (body: EntryInput) => request<Entry>('/entries', { method: 'POST', body }),
   update: (id: string, body: Partial<Omit<EntryInput, 'kind'>>) =>
     request<Entry>(`/entries/${id}`, { method: 'PATCH', body }),

@@ -4,7 +4,7 @@ import { Mark } from './Mark'
 /** Sleep scale: 10 hours fills the column. */
 const SLEEP_MAX = 10
 /** Share of the column height a full night may take; attack discs stack above it. */
-const SCALE = 74
+const SCALE = 82
 
 const DAY = new Intl.DateTimeFormat('tr-TR', { day: 'numeric', month: 'short' })
 const WEEKDAY = new Intl.DateTimeFormat('tr-TR', { weekday: 'long', day: 'numeric', month: 'long' })
@@ -18,7 +18,7 @@ export function RhythmStrip({ days }: { days: TrendDay[] }) {
   return (
     <figure className="m-0">
       <div aria-hidden>
-        <div className="relative grid h-40 items-end gap-[3px] border-b border-ink pr-9 sm:h-52 sm:gap-1.5" style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))` }}>
+        <div className="relative grid h-36 items-end gap-[3px] border-b border-ink pr-9 sm:h-44 sm:gap-1.5" style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))` }}>
           {/* Hairlines at 4 and 8 hours. */}
           {[4, 8].map((h) => (
             <div key={h} className="pointer-events-none absolute inset-x-0 border-t border-dashed border-line" style={{ bottom: `${(h / SLEEP_MAX) * SCALE}%` }}>
@@ -37,8 +37,8 @@ export function RhythmStrip({ days }: { days: TrendDay[] }) {
                 ))}
               </div>
               <span
-                className={`mark-in block w-full rounded-t-[2px] ${d.sleep == null ? 'bg-transparent' : 'bg-sleep'}`}
-                style={{ height: d.sleep == null ? 2 : `${(Math.min(d.sleep, SLEEP_MAX) / SLEEP_MAX) * SCALE}%`, ['--i' as string]: i }}
+                className={`mark-in block rounded-t-[2px] ${d.sleep == null ? 'mx-auto h-1.5 w-1.5 rounded-full bg-line-strong' : 'w-full bg-sleep'}`}
+                style={d.sleep == null ? { ['--i' as string]: i } : { height: `${(Math.min(d.sleep, SLEEP_MAX) / SLEEP_MAX) * SCALE}%`, ['--i' as string]: i }}
               />
             </div>
           ))}
@@ -58,7 +58,11 @@ export function RhythmStrip({ days }: { days: TrendDay[] }) {
         </span>
         <span className="inline-flex items-center gap-2">
           <Mark kind="panic" size={14} />
-          Atak, çap = şiddet
+          Atak; büyük daire = daha şiddetli
+        </span>
+        <span className="inline-flex items-center gap-2">
+          <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-line-strong" />
+          Uyku yazılmamış gün
         </span>
       </figcaption>
       <table className="sr-only">

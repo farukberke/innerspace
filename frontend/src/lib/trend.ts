@@ -26,6 +26,8 @@ export interface TrendStats {
   /** Mean sleep of the last 7 days minus the 14 days before; null if either side is empty. */
   sleepDelta: number | null
   daysWithRecords: number
+  /** Nights with recorded sleep. */
+  sleepNights: number
 }
 
 function dayKey(d: Date): string {
@@ -86,6 +88,7 @@ export function trendStats(days: TrendDay[]): TrendStats {
     meanSleep: mean(sleeps(days)),
     sleepDelta: recent != null && before != null ? recent - before : null,
     daysWithRecords: days.filter((d) => d.sleep != null || d.attacks.length > 0).length,
+    sleepNights: days.filter((d) => d.sleep != null).length,
   }
 }
 
@@ -99,6 +102,20 @@ export async function loadTrendEntries(now: Date, days = TREND_DAYS): Promise<En
     if (items.length >= page.total || page.items.length === 0) break
   }
   return items
+}
+
+/** The window in plain sentences, from the client's own records only: no scores, no judgement. */
+export function describeTrend(stats: TrendStats, days = TREND_DAYS): string[] {
+  const out: string[] = []
+  out.push(stats.attackCount === 0 ? `Son ${days} günde atak kaydın yok.` : `Son ${days} günde ${stats.attackCount} atak kaydettin.`)
+  if (stats.meanSleep != null) {
+    out.push(`${stats.sleepNights} gecenin uykusunu yazdın; ortalama ${formatHours(stats.meanSleep).replace(' sa', ' saat')}.`)
+  }
+  if (stats.sleepDelta != null && Math.abs(stats.sleepDelta) >= 0.25) {
+    const diff = ONE_DECIMAL.format(Math.abs(stats.sleepDelta))
+    out.push(`Son haftadaki gecelerin, önceki iki haftadan ortalama ${diff} saat daha ${stats.sleepDelta > 0 ? 'uzun' : 'kısa'}.`)
+  }
+  return out
 }
 
 const ONE_DECIMAL = new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })

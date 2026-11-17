@@ -33,6 +33,10 @@ export function ClinicianClients() {
   const [inviting, setInviting] = useState(false)
   const load = useCallback(() => clinicianApi.clients(), [])
   const { data, error, loading } = useLoad(load)
+  // Newest unopened summary per client, for a direct "open" action (metadata only).
+  const shared = useLoad(useCallback(() => clinicianApi.summaries(), []))
+  const newest = new Map<string, string>()
+  for (const s of shared.data ?? []) if (s.is_new && !newest.has(s.client_id)) newest.set(s.client_id, s.id)
   const clients = data ? sortClients(data) : []
   const newTotal = clients.reduce((n, c) => n + c.new_summaries, 0)
   return (
@@ -73,24 +77,31 @@ export function ClinicianClients() {
           </div>
           <ul className="divide-y divide-line">
             {clients.map((c) => (
-              <li key={c.id}>
-                <Link
-                  to={`/clinician/clients/${c.id}`}
-                  className="group grid gap-x-4 gap-y-1 px-4 py-4 hover:bg-brand-50 sm:px-5 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)] md:items-center"
-                >
-                  <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                    <span className="text-lg font-bold text-ink group-hover:underline group-hover:underline-offset-4">{c.display_name}</span>
-                    {c.new_summaries > 0 && <NewDot label={c.new_summaries === 1 ? 'Yeni özet' : `${c.new_summaries} yeni özet`} />}
-                  </span>
-                  <span className="num text-[0.9375rem] text-ink-2">
+              <li
+                key={c.id}
+                className="grid gap-x-4 gap-y-1 px-4 py-4 sm:px-5 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)] md:items-center"
+              >
+                <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <Link to={`/clinician/clients/${c.id}`} className="text-lg font-bold text-ink underline decoration-line-strong decoration-1 underline-offset-4 hover:decoration-ink">
+                    {c.display_name}
+                  </Link>
+                  {c.new_summaries > 0 && <NewDot label={c.new_summaries === 1 ? 'Yeni özet' : `${c.new_summaries} yeni özet`} />}
+                </span>
+                <span className="num flex flex-wrap items-center gap-x-3 text-[0.9375rem] text-ink-2">
+                  <span>
                     <span className="text-muted md:hidden">Son paylaşım: </span>
                     {c.last_shared_at ? `${formatShortDate(c.last_shared_at)} · ${relativeDay(c.last_shared_at)}` : 'Henüz paylaşım yok'}
                   </span>
-                  <span className="num text-[0.9375rem] text-ink-2">
-                    <span className="text-muted md:hidden">Sonraki randevu: </span>
-                    {c.next_appointment_at ? formatDateTime(c.next_appointment_at) : 'Planlı randevu yok'}
-                  </span>
-                </Link>
+                  {newest.has(c.id) && (
+                    <Link to={`/clinician/summaries/${newest.get(c.id)}`} className="link inline-flex min-h-11 items-center">
+                      Yeni özeti aç
+                    </Link>
+                  )}
+                </span>
+                <span className="num text-[0.9375rem] text-ink-2">
+                  <span className="text-muted md:hidden">Sonraki randevu: </span>
+                  {c.next_appointment_at ? formatDateTime(c.next_appointment_at) : 'Planlı randevu yok'}
+                </span>
               </li>
             ))}
           </ul>

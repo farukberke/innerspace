@@ -9,11 +9,10 @@ import { ReminderStrip } from '../../components/ReminderStrip'
 import { RhythmStrip } from '../../components/RhythmStrip'
 import { Alert, Badge, calendarDaysUntil, formatDate, LinkButton, relativeDay, Spinner } from '../../components/ui'
 import { useLoad } from '../../hooks/useLoad'
-import { buildTrend, formatDelta, formatHours, loadTrendEntries, TREND_DAYS, trendStats } from '../../lib/trend'
+import { buildTrend, describeTrend, loadTrendEntries, TREND_DAYS, trendStats } from '../../lib/trend'
 import { STATUS_LABEL, STATUS_TONE } from './Summaries'
 
 const KIND_LABEL = { therapy: 'Terapi seansı', psychiatry: 'Psikiyatri randevusu' } as const
-const ONE_DECIMAL = new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 1 })
 
 export function nextAppointment(items: Appointment[], now: Date): Appointment | null {
   const upcoming = items.filter((a) => new Date(a.scheduled_at).getTime() >= now.getTime())
@@ -29,18 +28,6 @@ export function latestSummary(items: Summary[]): Summary | null {
 
 function firstName(display: string): string {
   return display.split(/\s+/)[0] ?? display
-}
-
-function Stat({ label, value, note }: { label: string; value: string; note?: string }) {
-  return (
-    <div className="min-w-0">
-      <dt className="text-[0.8125rem] font-semibold text-muted">{label}</dt>
-      <dd className="num mt-0.5 text-xl font-extrabold [font-stretch:110%]">
-        {value}
-        {note && <span className="ml-2 text-[0.875rem] font-semibold text-ink-2 [font-stretch:100%]">{note}</span>}
-      </dd>
-    </div>
-  )
 }
 
 function Rhythm({ now }: { now: Date }) {
@@ -70,18 +57,7 @@ function Rhythm({ now }: { now: Date }) {
               Bu dönemde uyku veya atak kaydın yok. Günlük kayda uyku saatini eklediğinde ya da bir atak kaydettiğinde burada görünür.
             </p>
           ) : (
-            <dl className="mt-5 grid grid-cols-2 gap-4 border-t border-line pt-4 sm:grid-cols-3">
-              <Stat
-                label="Atak"
-                value={String(stats.attackCount)}
-                note={stats.meanIntensity != null ? `ort. şiddet ${ONE_DECIMAL.format(stats.meanIntensity)}/10` : undefined}
-              />
-              <Stat label="Uyku ortalaması" value={stats.meanSleep != null ? formatHours(stats.meanSleep) : '—'} />
-              <Stat
-                label="Son 7 gün, önceki 14 güne göre"
-                value={stats.sleepDelta != null ? formatDelta(stats.sleepDelta) : '—'}
-              />
-            </dl>
+            <p className="mt-5 max-w-[62ch] border-t border-line pt-4 text-base leading-relaxed text-ink-2">{describeTrend(stats).join(' ')}</p>
           )}
         </>
       )}
@@ -108,21 +84,21 @@ function NextAppointment({ appointment, summaries, now }: { appointment: Appoint
   const prepared = summaries.find((s) => s.appointment_id === appointment.id)
   const days = calendarDaysUntil(appointment.scheduled_at, now)
   return (
-    <section aria-labelledby="appt-title" className="flex flex-col rounded-soft-lg bg-brand-600 p-6 text-white">
+    <section aria-labelledby="appt-title" className="flex flex-col rounded-soft-lg bg-brand-600 p-5 text-white sm:p-6">
       <h2 id="appt-title" className="text-lg font-extrabold">
         Sıradaki randevu
       </h2>
-      <p className="display num mt-5 text-[3.5rem] sm:text-[4.25rem]">
+      <p className="display num mt-3 text-[2.75rem] sm:mt-5 sm:text-[4.25rem]">
         {when.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })}
       </p>
-      <p className="num mt-2 text-xl font-bold">
+      <p className="num mt-1 text-lg font-bold sm:mt-2 sm:text-xl">
         {when.toLocaleDateString('tr-TR', { weekday: 'long' })} {when.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
       </p>
       <p className="mt-1 text-base text-brand-100">
         {KIND_LABEL[appointment.kind]}
         {appointment.clinician_name ? ` · ${appointment.clinician_name}` : ''} · {relativeDay(appointment.scheduled_at, now)}
       </p>
-      <div className="mt-auto pt-7">
+      <div className="mt-auto pt-5 sm:pt-7">
         {prepared ? (
           <>
             <p className="mb-3 text-base text-brand-50">

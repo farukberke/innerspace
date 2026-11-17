@@ -31,6 +31,14 @@ function ProductSample() {
           </div>
         ))}
       </div>
+      <p aria-hidden className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[0.8125rem] font-semibold text-muted">
+        <span className="inline-flex items-center gap-1.5">
+          <Mark kind="sleep" size={11} /> Uyku
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <Mark kind="panic" size={11} /> Atak; büyük daire = daha şiddetli
+        </span>
+      </p>
       <div className="mt-5 border-t border-line pt-4">
         <div className="flex flex-wrap items-center gap-2">
           <p className="text-[1.0625rem] font-extrabold">Seans öncesi özet</p>
@@ -179,7 +187,7 @@ export function Landing() {
               Klinik, uzman, danışan.
             </h2>
             <p className="mt-5 max-w-[46ch] text-lg text-ink-2">
-              Klinik bir organizasyon olarak çalışır. Her rol yalnızca işini yapmak için gereken kadarını görür.
+              Klinik bir organizasyon olarak çalışır: yönetici uzmanları davet eder ve danışanlara atar, uzman danışanını davet eder, danışan seanstan önce özetini paylaşır. Her rol yalnızca işini yapmak için gereken kadarını görür.
             </p>
           </div>
           <dl className="divide-y divide-line border-y border-ink">

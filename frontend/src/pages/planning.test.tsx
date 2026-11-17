@@ -147,10 +147,10 @@ describe('clinician client detail', () => {
       },
     })
     inRouter(<ClinicianClients />)
-    const link = await screen.findByRole('link', { name: /Ayşe Y\./ })
+    const link = await screen.findByRole('link', { name: 'Ayşe Y.' })
     expect(link).toHaveAttribute('href', '/clinician/clients/c1')
-    expect(link).toHaveTextContent('Sonraki randevu')
-    expect(link).toHaveTextContent('Henüz paylaşım yok')
+    expect(link.closest('li')).toHaveTextContent('Sonraki randevu')
+    expect(link.closest('li')).toHaveTextContent('Henüz paylaşım yok')
   })
 
   it('creates, changes and cancels appointments and shows the shared plan read-only', async () => {

@@ -137,8 +137,7 @@ describe('client home', () => {
     renderAt('/client/home')
     expect(await screen.findByRole('heading', { name: 'Merhaba Ayşe.' })).toBeInTheDocument()
     const rhythm = (await screen.findByRole('heading', { name: 'Son 21 gün' })).closest('section')!
-    expect(await within(rhythm).findByText('Uyku ortalaması')).toBeInTheDocument()
-    expect(within(rhythm).getByText('6,5 sa')).toBeInTheDocument()
+    expect(await within(rhythm).findByText(/1 atak kaydettin/)).toHaveTextContent('2 gecenin uykusunu yazdın; ortalama 6,5 saat.')
     // Screen readers get the strip as a table.
     expect(within(rhythm).getByRole('table')).toHaveTextContent('7/10')
 
@@ -205,12 +204,20 @@ describe('clinician client list', () => {
           client({ id: 'c2', display_name: 'Can D.' }),
         ],
       },
+      'GET /clinician/summaries': {
+        body: [
+          { id: 's-new', client_id: 'c1', title: 'Özet', period_start: null, period_end: null, shared_at: daysFromNow(0, 9), created_at: daysFromNow(0, 9), is_new: true },
+        ],
+      },
     })
     renderAt('/clinician/clients')
-    const ayse = await screen.findByRole('link', { name: /Ayşe Y\./ })
+    const ayse = (await screen.findByRole('link', { name: 'Ayşe Y.' })).closest('li')!
     expect(ayse).toHaveTextContent('2 yeni özet')
     expect(ayse).toHaveTextContent('bugün')
-    expect(screen.getByRole('link', { name: /Can D\./ })).toHaveTextContent('Henüz paylaşım yok')
+    expect(await within(ayse).findByRole('link', { name: 'Yeni özeti aç' })).toHaveAttribute('href', '/clinician/summaries/s-new')
+    const can = screen.getByRole('link', { name: 'Can D.' }).closest('li')!
+    expect(can).toHaveTextContent('Henüz paylaşım yok')
+    expect(within(can).queryByRole('link', { name: 'Yeni özeti aç' })).not.toBeInTheDocument()
     expect(screen.getByText(/2 yeni paylaşılan özet var/)).toBeInTheDocument()
   })
 })
@@ -238,5 +245,27 @@ describe('phone navigation', () => {
     await u.click(screen.getByRole('button', { name: 'Daha' }))
     await u.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Çıkış yap' }))
     expect(await screen.findByRole('heading', { name: 'Giriş yap' })).toBeInTheDocument()
+  })
+})
+
+describe('summary sources', () => {
+  it('opens the client’s own records a statement rests on', async () => {
+    tokens.set(pair)
+    mockFetch({
+      'POST /auth/refresh': { body: pair },
+      'GET /auth/me': { body: user('client') },
+      'GET /summaries/s1': { body: summary({ status: 'shared', shared_at: '2026-11-15T10:00:00Z' }) },
+      'GET /entries/e1': { body: { ...entry('panic', 3, { intensity: 6 }), id: 'e1', note: 'Metroda başladı.' } },
+      'GET /entries/e2': { status: 404, body: { detail: 'Not found' } },
+    })
+    renderAt('/client/summaries/s1')
+    const u = userEvent.setup()
+    const toggle = await screen.findByRole('button', { name: /2 kaydına dayanıyor/ })
+    expect(toggle).toHaveAttribute('aria-expanded', 'false')
+    await u.click(toggle)
+    expect(toggle).toHaveAttribute('aria-expanded', 'true')
+    // A record deleted since the summary was made is simply left out.
+    expect(await screen.findByText('Metroda başladı.')).toBeInTheDocument()
+    expect(screen.getAllByText(/^Atak ·/)).toHaveLength(1)
   })
 })

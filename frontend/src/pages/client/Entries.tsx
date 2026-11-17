@@ -116,27 +116,27 @@ export function Entries() {
       ) : (
         <ul className="divide-y divide-line overflow-hidden rounded-soft-lg border border-line bg-surface">
           {data?.items.map((e) => (
-            <li key={e.id} className="flex gap-4 px-4 py-4 sm:px-5">
-              <span className="mt-1">
+            <li key={e.id} className="flex gap-4 px-4 py-3 sm:px-5">
+              <span className="mt-2.5">
                 <Mark kind={e.kind} size={16} />
               </span>
               <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
                   <p className="font-bold text-ink">
                     {KIND_LABEL[e.kind]}
                     {detailsLine(e) && <span className="font-normal text-ink-2"> · {detailsLine(e)}</span>}
                   </p>
-                  <span className="num text-[0.875rem] text-muted">{formatDateTime(e.occurred_at)}</span>
+                  <div className="flex items-center gap-1">
+                    <span className="num mr-2 text-[0.875rem] text-muted">{formatDateTime(e.occurred_at)}</span>
+                    <Button variant="ghost" className="min-h-10 px-2.5" onClick={() => setEditing(e)} aria-label={`${KIND_LABEL[e.kind]} kaydını düzenle`}>
+                      Düzenle
+                    </Button>
+                    <Button variant="ghost" className="min-h-10 px-2.5" onClick={() => remove(e)} aria-label={`${KIND_LABEL[e.kind]} kaydını sil`}>
+                      Sil
+                    </Button>
+                  </div>
                 </div>
                 {e.note && <p className="mt-1 max-w-[70ch] whitespace-pre-wrap break-words text-base text-ink-2">{e.note}</p>}
-                <div className="-ml-3 mt-1 flex gap-1">
-                  <Button variant="ghost" onClick={() => setEditing(e)} aria-label={`${KIND_LABEL[e.kind]} kaydını düzenle`}>
-                    Düzenle
-                  </Button>
-                  <Button variant="ghost" onClick={() => remove(e)} aria-label={`${KIND_LABEL[e.kind]} kaydını sil`}>
-                    Sil
-                  </Button>
-                </div>
               </div>
             </li>
           ))}

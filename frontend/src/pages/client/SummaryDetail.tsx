@@ -130,7 +130,7 @@ export function SummaryDetail() {
                   <Button onClick={() => act(() => summariesApi.share(summary.id))}>Uzmanımla paylaş</Button>
                 )}
                 {summary.status === 'shared' && (
-                  <Button variant="danger" onClick={() => act(() => summariesApi.unshare(summary.id))}>
+                  <Button variant="secondary" onClick={() => act(() => summariesApi.unshare(summary.id))}>
                     Paylaşımı geri al
                   </Button>
                 )}
