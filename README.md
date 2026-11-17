@@ -1,5 +1,7 @@
 # Seans Arası
 
+**English** · [Türkçe](README.tr.md)
+
 [![CI](https://github.com/farukberke/seansarasi/actions/workflows/ci.yml/badge.svg)](https://github.com/farukberke/seansarasi/actions/workflows/ci.yml)
 
 **A between-sessions notebook for people in therapy or psychiatric care:** clients log what happens between appointments, and an AI assistant turns their own entries into a short, source-cited summary that they review, approve and choose to share with their clinician.
