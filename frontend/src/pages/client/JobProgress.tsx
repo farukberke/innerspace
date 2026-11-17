@@ -7,6 +7,7 @@ import { useJobPolling } from '../../hooks/useJobPolling'
 const FAILURE_TEXT: Record<string, string> = {
   no_entries: 'Seçtiğin tarih aralığında kayıt bulunamadı.',
   enqueue_failed: 'Özet işlemi başlatılamadı. Lütfen daha sonra tekrar dene.',
+  budget_exceeded: 'Bugünkü AI kullanım sınırına ulaştın. Lütfen yarın tekrar dene.',
 }
 
 /** Follows a summary job to its end: succeeded, crisis (fixed screen) or failed. */

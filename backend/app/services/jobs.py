@@ -16,11 +16,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.ai.llm import AiGenerationError
 from app.core.config import Settings
 from app.models import SummaryJob, SummaryJobStatus, User, UserRole
-from app.services import ai
+from app.services import ai, usage
 from app.services.errors import (
     ConflictError,
     CrisisDetectedError,
     NotFoundError,
+    RateLimitedError,
     ValidationFailedError,
 )
 
@@ -169,11 +170,15 @@ async def run(
         if client is None or not client.is_active:
             await settle(SummaryJobStatus.FAILED, "client_inactive")
             return JobOutcome.DONE
+        # Checked again here: several jobs queued at once must not overrun the daily budget.
+        await usage.check_daily_budget(session, settings, client)
         await ai.generate_summary(
             session, settings, model, client, job.period_start, job.period_end, job
         )
     except CrisisDetectedError:
         await settle(SummaryJobStatus.CRISIS)
+    except RateLimitedError:
+        await settle(SummaryJobStatus.FAILED, "budget_exceeded")
     except ValidationFailedError:
         await settle(SummaryJobStatus.FAILED, "validation_failed")
     except AiGenerationError as exc:

@@ -356,3 +356,34 @@ async def test_retry_after_reflects_when_the_oldest_usage_leaves_the_window(
     acting.user = w.client
     response = await http.post(f"{API}/summaries/generate", json=PERIOD)
     assert 3000 <= int(response.headers["Retry-After"]) <= 3700
+
+
+async def test_queued_job_rechecks_the_budget_before_calling_the_model(
+    http: AsyncClient,
+    acting,
+    llm: FakeLlm,
+    w: World,
+    jobq: FakeQueue,
+    db_session: AsyncSession,
+    monkeypatch: pytest.MonkeyPatch,
+    test_settings: Settings,
+) -> None:
+    from app.models import Summary, SummaryJobStatus  # noqa: PLC0415
+    from app.services import jobs  # noqa: PLC0415
+
+    monkeypatch.setattr(test_settings, "llm_daily_request_limit", 10)
+    llm.model = Script(draft()).model
+    acting.user = w.client
+    assert (await http.post(f"{API}/summaries/generate", json=PERIOD)).status_code == 202
+    # The budget fills up (e.g. other jobs ran) while this one waits in the queue.
+    db_session.add(_usage(w.client, requests=10))
+    await db_session.flush()
+    await jobs.run(db_session, test_settings, llm.model, jobq.ids[0], final_attempt=False)
+    job = await db_session.get(SummaryJob, jobq.ids[0], populate_existing=True)
+    assert job is not None
+    assert (job.status, job.error_code) == (SummaryJobStatus.FAILED, "budget_exceeded")
+    assert (await db_session.scalar(select(func.count()).select_from(Summary))) == 0
+    calls = await db_session.scalar(
+        select(func.count()).select_from(LlmUsage).where(LlmUsage.purpose == "session_summary")
+    )
+    assert calls == 1  # only the seeded row: the model was never called
