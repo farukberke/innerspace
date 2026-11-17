@@ -85,6 +85,7 @@ class Settings(BaseSettings):
     rate_limit_export: str = "5/hour"  # per user: GET /account/export
     rate_limit_account_delete: str = "5/hour"  # per user: DELETE /account (password guesses)
     rate_limit_topics: str = "60/hour"  # per user: PUT /summaries/{id}/topics
+    rate_limit_invite: str = "30/hour"  # per user: POST /invitations
     # The client's calendar day for in-app reminders ("tomorrow's appointment").
     reminder_timezone: str = "Europe/Istanbul"
     # Rolling 24h budget per user across all LLM calls (`llm_usage`); 0 disables a cap.
@@ -127,6 +128,7 @@ class Settings(BaseSettings):
         "rate_limit_export",
         "rate_limit_account_delete",
         "rate_limit_topics",
+        "rate_limit_invite",
     )
     @classmethod
     def _valid_rate_limit(cls, value: str) -> str:

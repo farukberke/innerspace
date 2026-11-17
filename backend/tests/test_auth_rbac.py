@@ -674,3 +674,32 @@ async def test_invitation_invalid_if_sponsor_deactivated(
     acting.user = None
     assert (await _accept(http, token)).status_code == 400
     assert await db_session.scalar(select(User).where(User.email == "orphan@org-a.test")) is None
+
+
+async def test_deactivation_revokes_sessions_so_reactivation_does_not_revive_them(
+    http: AsyncClient, acting, w: World
+) -> None:
+    login = await _login(http, w.clin_a.email)
+    assert login.status_code == 200
+    refresh_token = login.json()["refresh_token"]
+    acting.user = w.admin_a
+    for active in (False, True):
+        r = await http.patch(f"{API}/admin/users/{w.clin_a.id}", json={"is_active": active})
+        assert r.status_code == 200
+    r = await http.post(f"{API}/auth/refresh", json={"refresh_token": refresh_token})
+    assert r.status_code == 401
+    assert (await _login(http, w.clin_a.email)).status_code == 200  # a fresh login works
+
+
+async def test_invitation_creation_is_rate_limited_per_user(
+    http: AsyncClient, acting, w: World, monkeypatch: pytest.MonkeyPatch, test_settings: Settings
+) -> None:
+    monkeypatch.setattr(test_settings, "rate_limit_invite", "2/hour")
+    acting.user = w.clin_a
+    for i in range(2):
+        r = await _invite(http, email=f"new{i}@a.test", role="client")
+        assert r.status_code == 201, r.text
+    r = await _invite(http, email="new3@a.test", role="client")
+    assert r.status_code == 429
+    acting.user = w.admin_a  # another user has their own limit
+    assert (await _invite(http, email="new4@a.test", role="client")).status_code == 201

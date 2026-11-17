@@ -1,8 +1,8 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Body, HTTPException, status
+from fastapi import APIRouter, Body, Depends, HTTPException, status
 
-from app.api.deps import CurrentUser, SessionDep, SettingsDep
+from app.api.deps import CurrentUser, SessionDep, SettingsDep, limit_per_user
 from app.schemas.care import InvitationCreate, InvitationCreated
 from app.services import invitations as service
 from app.services.errors import ConflictError, NotFoundError, PermissionDeniedError
@@ -10,7 +10,9 @@ from app.services.errors import ConflictError, NotFoundError, PermissionDeniedEr
 router = APIRouter(prefix="/invitations", tags=["invitations"])
 
 
-@router.post("", status_code=status.HTTP_201_CREATED)
+@router.post(
+    "", status_code=status.HTTP_201_CREATED, dependencies=[Depends(limit_per_user("invite"))]
+)
 async def create_invitation(
     session: SessionDep,
     settings: SettingsDep,

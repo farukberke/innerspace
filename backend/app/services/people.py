@@ -3,11 +3,11 @@
 import uuid
 from datetime import UTC, datetime
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import CareAssignment, User, UserRole
+from app.models import CareAssignment, RefreshToken, User, UserRole
 from app.services import audit
 from app.services.errors import ConflictError, NotFoundError
 
@@ -33,6 +33,13 @@ async def set_user_active(
     if user.id == admin.id:
         raise ConflictError("You cannot change your own status")
     user.is_active = active
+    if not active:
+        # End every session now, so reactivation does not revive old (possibly leaked) tokens.
+        await session.execute(
+            update(RefreshToken)
+            .where(RefreshToken.user_id == user.id, RefreshToken.revoked_at.is_(None))
+            .values(revoked_at=datetime.now(UTC))
+        )
     await audit.record(
         session,
         "user.activate" if active else "user.deactivate",
