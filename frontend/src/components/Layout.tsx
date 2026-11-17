@@ -203,7 +203,7 @@ export function Layout() {
 
       {/* Desktop: the cobalt rail. */}
       <aside className="sticky top-0 hidden h-screen flex-col bg-brand-600 px-4 pb-5 pt-6 text-white lg:flex">
-        <Link to={HOME_BY_ROLE[user.role]} className="mb-8 px-2">
+        <Link to={HOME_BY_ROLE[user.role]} className="mb-8 flex min-h-11 items-center px-2">
           <Logo inverted />
         </Link>
         <nav aria-label="Ana menü">
@@ -246,7 +246,7 @@ export function Layout() {
         <DemoBanner />
         {/* Phone/tablet: slim top bar; destinations live in the bottom tab bar. */}
         <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-line bg-paper/95 px-4 py-2.5 backdrop-blur lg:hidden">
-          <Link to={HOME_BY_ROLE[user.role]} aria-label="Seans Arası ana sayfa">
+          <Link to={HOME_BY_ROLE[user.role]} aria-label="Seans Arası ana sayfa" className="flex min-h-11 items-center">
             <Logo />
           </Link>
           {user.role === 'client' && <MomentButton />}

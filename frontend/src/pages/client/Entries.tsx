@@ -126,8 +126,8 @@ export function Entries() {
                     {KIND_LABEL[e.kind]}
                     {detailsLine(e) && <span className="font-normal text-ink-2"> · {detailsLine(e)}</span>}
                   </p>
-                  <div className="flex items-center gap-1">
-                    <span className="num mr-2 text-[0.875rem] text-muted">{formatDateTime(e.occurred_at)}</span>
+                  <div className="flex w-full items-center justify-between gap-1 sm:w-auto sm:justify-end">
+                    <span className="num mr-2 whitespace-nowrap text-[0.875rem] text-muted">{formatDateTime(e.occurred_at)}</span>
                     <Button variant="ghost" className="min-h-10 px-2.5" onClick={() => setEditing(e)} aria-label={`${KIND_LABEL[e.kind]} kaydını düzenle`}>
                       Düzenle
                     </Button>

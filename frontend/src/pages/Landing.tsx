@@ -120,7 +120,7 @@ export function Landing() {
         </header>
 
         <main id="main" tabIndex={-1} className="focus:outline-none">
-          <section className={`${wrap} grid items-center gap-12 pb-20 pt-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:gap-16 lg:pb-28 lg:pt-16`}>
+          <section className={`${wrap} grid items-center gap-10 pb-14 pt-8 sm:gap-12 sm:pb-20 sm:pt-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:gap-16 lg:pb-28 lg:pt-16`}>
             <div>
               <h1 className="display text-[3.25rem] leading-[0.95] sm:text-[4.5rem] lg:text-[5.25rem]">Seanslar arası defter.</h1>
               <p className="mt-6 max-w-[34rem] text-lg leading-relaxed text-brand-50 sm:text-xl">
@@ -140,44 +140,54 @@ export function Landing() {
         </main>
       </div>
 
-      <section id="nasil" aria-labelledby="nasil-h" className="py-20 lg:py-28">
+      <section id="nasil" aria-labelledby="nasil-h" className="py-14 sm:py-20 lg:py-28">
         <div className={wrap}>
-          <h2 id="nasil-h" className="max-w-[18ch] text-[2.25rem] font-extrabold leading-[1.02] sm:text-[3rem]">
+          <h2 id="nasil-h" className="max-w-[18ch] text-[2rem] font-extrabold leading-[1.05] sm:text-[3rem] sm:leading-[1.02]">
             Haftada 50 dakika seans, arada bir hafta hayat.
           </h2>
           <p className="mt-5 max-w-[60ch] text-lg text-ink-2">
             Seansın ilk dakikaları çoğu zaman “bu hafta ne oldu”yu toparlamaya gider. Seans Arası o haftayı seansa hazır getirir.
           </p>
-          <ol className="mt-14 grid gap-x-8 gap-y-10 border-t border-ink pt-8 sm:grid-cols-2 lg:grid-cols-4">
+          <ol className="mt-10 grid gap-x-8 gap-y-6 border-t border-ink pt-6 sm:mt-14 sm:gap-y-10 sm:pt-8 sm:grid-cols-2 lg:grid-cols-4">
             {STEPS.map((s) => (
-              <li key={s.title}>
-                <img src={s.image} alt="" width={320} height={320} loading="lazy" className="aspect-square w-full max-w-[13rem] object-cover mix-blend-multiply [mask-image:radial-gradient(closest-side,black_72%,transparent)]" />
-                <h3 className="mt-4 text-xl font-extrabold">{s.title}</h3>
-                <p className="mt-2 text-base leading-relaxed text-ink-2">{s.body}</p>
+              <li key={s.title} className="flex items-start gap-4 sm:block">
+                <img
+                  src={s.image}
+                  alt=""
+                  width={320}
+                  height={320}
+                  loading="lazy"
+                  className="aspect-square w-24 shrink-0 object-cover mix-blend-multiply [mask-image:radial-gradient(closest-side,black_72%,transparent)] sm:w-full sm:max-w-[13rem]"
+                />
+                <div className="min-w-0">
+                  <h3 className="text-lg font-extrabold sm:mt-4 sm:text-xl">{s.title}</h3>
+                  <p className="mt-1 text-base leading-relaxed text-ink-2 sm:mt-2">{s.body}</p>
+                </div>
               </li>
             ))}
           </ol>
         </div>
       </section>
 
+      {/* Phones and tablets: the line sits above the picture; desktop: over its empty wall. */}
       <section aria-label="Kapak" className="relative overflow-hidden bg-sunk">
+        <p className="mx-auto max-w-6xl px-4 pb-2 pt-10 text-[1.75rem] font-extrabold leading-[1.1] text-ink sm:px-6 sm:pt-14 sm:text-[2.5rem] lg:absolute lg:left-0 lg:right-0 lg:top-0 lg:px-8 lg:pb-0 lg:text-[3rem] lg:leading-[1.05]">
+          <span className="block max-w-[20ch] lg:max-w-[14ch]">Seansta konuşulan unutulmasın; seanslar arası yaşanan da.</span>
+        </p>
         <img
           src="/landing-cover.webp"
           alt=""
           width={1536}
           height={1024}
           loading="lazy"
-          className="h-[24rem] w-full object-cover object-right sm:h-[32rem] lg:h-[38rem]"
+          className="h-[15rem] w-full object-cover object-[78%_100%] sm:h-[26rem] lg:h-[38rem] lg:object-right"
         />
-        <p className="absolute left-0 right-0 top-0 mx-auto max-w-6xl px-4 pt-10 text-[2rem] font-extrabold leading-[1.05] text-ink sm:px-6 sm:pt-14 sm:text-[3rem] lg:px-8">
-          <span className="block max-w-[11ch] sm:max-w-[14ch]">Seansta konuşulan unutulmasın; seanslar arası yaşanan da.</span>
-        </p>
       </section>
 
-      <section id="roller" aria-labelledby="roller-h" className="py-20 lg:py-28">
-        <div className={`${wrap} grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]`}>
+      <section id="roller" aria-labelledby="roller-h" className="py-14 sm:py-20 lg:py-28">
+        <div className={`${wrap} grid gap-8 sm:gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]`}>
           <div>
-            <h2 id="roller-h" className="text-[2.25rem] font-extrabold leading-[1.02] sm:text-[3rem]">
+            <h2 id="roller-h" className="text-[2rem] font-extrabold leading-[1.05] sm:text-[3rem] sm:leading-[1.02]">
               Klinik, uzman, danışan.
             </h2>
             <p className="mt-5 max-w-[46ch] text-lg text-ink-2">
@@ -195,12 +205,12 @@ export function Landing() {
         </div>
       </section>
 
-      <section id="kurallar" aria-labelledby="kurallar-h" className="bg-ink py-20 text-white lg:py-28">
+      <section id="kurallar" aria-labelledby="kurallar-h" className="bg-ink py-14 text-white sm:py-20 lg:py-28">
         <div className={wrap}>
-          <h2 id="kurallar-h" className="max-w-[20ch] text-[2.25rem] font-extrabold leading-[1.02] sm:text-[3rem]">
+          <h2 id="kurallar-h" className="max-w-[20ch] text-[2rem] font-extrabold leading-[1.05] sm:text-[3rem] sm:leading-[1.02]">
             Kurallar sunucuda; yapay zekânın kararına bırakılmaz.
           </h2>
-          <ul className="mt-12 grid gap-x-10 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="mt-8 grid gap-x-10 gap-y-6 sm:mt-12 sm:gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
             {RULES.map(([t, b]) => (
               <li key={t} className="border-t border-white/25 pt-5">
                 <h3 className="text-lg font-extrabold">{t}</h3>

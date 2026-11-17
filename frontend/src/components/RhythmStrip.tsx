@@ -72,7 +72,9 @@ export function RhythmStrip({ days }: { days: TrendDay[] }) {
           Uyku yazılmamış gün
         </span>
       </figcaption>
-      <table className="sr-only">
+      {/* sr-only on the wrapper: a table ignores the 1px width and would widen the page. */}
+      <div className="sr-only">
+      <table>
         <caption>Son {days.length} gün: uyku ve ataklar</caption>
         <thead>
           <tr>
@@ -91,6 +93,7 @@ export function RhythmStrip({ days }: { days: TrendDay[] }) {
           ))}
         </tbody>
       </table>
+      </div>
     </figure>
   )
 }

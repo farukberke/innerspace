@@ -26,7 +26,7 @@ export function AuthShell({ title, lede, children }: { title: string; lede?: Rea
       <div className="flex min-h-screen flex-col">
         <DemoBanner />
         <main id="main" tabIndex={-1} className="mx-auto flex w-full max-w-[30rem] flex-1 flex-col px-5 pb-12 pt-8 focus:outline-none sm:pt-14">
-          <Link to="/" className="mb-10 self-start" aria-label="Seans Arası tanıtım sayfası">
+          <Link to="/" className="mb-10 flex min-h-11 items-center self-start" aria-label="Seans Arası tanıtım sayfası">
             <Logo />
           </Link>
           <h1 className="text-[2.25rem] leading-[1.05] sm:text-[2.75rem]">{title}</h1>

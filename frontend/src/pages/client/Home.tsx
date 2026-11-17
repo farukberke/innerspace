@@ -40,7 +40,7 @@ function Rhythm({ now }: { now: Date }) {
         <h2 id="rhythm-title" className="text-lg font-extrabold">
           Son {TREND_DAYS} gün
         </h2>
-        <Link to="/client/entries" className="link text-[0.9375rem]">
+        <Link to="/client/entries" className="link inline-flex min-h-11 items-center text-[0.9375rem]">
           Tüm kayıtlar
         </Link>
       </div>
@@ -136,7 +136,7 @@ function LastSummary({ summary }: { summary: Summary | null }) {
         <h2 id="last-summary-title" className="text-lg font-extrabold">
           Son özet
         </h2>
-        <Link to="/client/summaries" className="link text-[0.9375rem]">
+        <Link to="/client/summaries" className="link inline-flex min-h-11 items-center text-[0.9375rem]">
           Özetlerim
         </Link>
       </div>
@@ -147,7 +147,7 @@ function LastSummary({ summary }: { summary: Summary | null }) {
       ) : (
         <>
           <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
-            <Link to={`/client/summaries/${summary.id}`} className="text-xl font-bold text-ink underline decoration-line-strong decoration-1 underline-offset-4 hover:decoration-ink">
+            <Link to={`/client/summaries/${summary.id}`} className="inline-flex min-h-11 items-center text-xl font-bold text-ink underline decoration-line-strong decoration-1 underline-offset-4 hover:decoration-ink">
               {summary.title}
             </Link>
             <Badge tone={STATUS_TONE[summary.status]}>{STATUS_LABEL[summary.status]}</Badge>

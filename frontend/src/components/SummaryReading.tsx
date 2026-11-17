@@ -54,7 +54,7 @@ function Sources({ ids }: { ids: string[] }) {
         aria-expanded={open}
         aria-controls={panel}
         onClick={() => setOpen((o) => !o)}
-        className="num inline-flex min-h-9 items-center gap-1.5 rounded-soft text-[0.875rem] font-bold text-brand-700 hover:text-brand-900"
+        className="num inline-flex min-h-11 items-center gap-1.5 rounded-soft text-[0.875rem] font-bold text-brand-700 hover:text-brand-900"
       >
         {ids.length} kaydına dayanıyor
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden className={`transition-transform ${open ? 'rotate-180' : ''}`}>

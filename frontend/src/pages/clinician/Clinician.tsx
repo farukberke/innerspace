@@ -82,7 +82,7 @@ export function ClinicianClients() {
                 className="grid gap-x-4 gap-y-1 px-4 py-4 sm:px-5 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)] md:items-center"
               >
                 <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                  <Link to={`/clinician/clients/${c.id}`} className="text-lg font-bold text-ink underline decoration-line-strong decoration-1 underline-offset-4 hover:decoration-ink">
+                  <Link to={`/clinician/clients/${c.id}`} className="inline-flex min-h-11 items-center text-lg font-bold text-ink underline decoration-line-strong decoration-1 underline-offset-4 hover:decoration-ink">
                     {c.display_name}
                   </Link>
                   {c.new_summaries > 0 && <NewDot label={c.new_summaries === 1 ? 'Yeni özet' : `${c.new_summaries} yeni özet`} />}
