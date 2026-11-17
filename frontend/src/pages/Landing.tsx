@@ -77,13 +77,10 @@ const PRIVACY = [
   { title: 'Organizasyonlar ayrıdır', body: 'Bir klinik başka bir kliniğin verisine erişemez.' },
 ]
 
-const TECH = ['FastAPI', 'PostgreSQL', 'Pydantic AI', 'React']
-
 const NAV_LINKS = [
   ['#nasil', 'Nasıl çalışır'],
   ['#uzman', 'Uzman için'],
   ['#guvenlik', 'Güvenlik'],
-  ['#teknik', 'Teknik'],
 ]
 
 export function Landing() {
@@ -202,27 +199,6 @@ export function Landing() {
           </div>
         </section>
 
-        <section id="teknik" aria-labelledby="teknik-h" className="py-16 lg:py-24">
-          <div className={wrap}>
-            <h2 id="teknik-h" className={h2}>
-              Teknik özet
-            </h2>
-            <p className="mt-4 max-w-2xl text-lg text-ink-2">Sade bir monolit: API tarafında Python, arayüzde TypeScript.</p>
-            <ul className="mt-6 flex flex-wrap gap-2">
-              {TECH.map((t) => (
-                <li key={t} className="rounded-full border border-line-strong bg-surface px-4 py-2 text-base font-medium">
-                  {t}
-                </li>
-              ))}
-            </ul>
-            <p className="mt-6">
-              <a href={REPO_URL} className="link inline-flex min-h-11 items-center text-lg" rel="noreferrer">
-                Kaynak kodunu GitHub’da incele
-              </a>
-            </p>
-          </div>
-        </section>
-
         <section aria-labelledby="kapanis-h" className="border-t border-line py-16 lg:py-24">
           <div className={`${wrap} flex flex-col items-start gap-6`}>
             <h2 id="kapanis-h" className={h2}>
@@ -239,6 +215,9 @@ export function Landing() {
         <div className={`${wrap} flex flex-col gap-2 text-sm text-ink-2 sm:flex-row sm:justify-between`}>
           <p>InnerSpace · portföy projesi. Gerçek kişisel veya sağlık bilgisi girme.</p>
           <p>Tıbbi tavsiye vermez; teşhis veya tedavi aracı değildir.</p>
+          <a href={REPO_URL} className="link" rel="noreferrer">
+            Kaynak kod (GitHub)
+          </a>
         </div>
       </footer>
     </div>
