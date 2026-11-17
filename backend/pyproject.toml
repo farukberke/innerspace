@@ -1,7 +1,7 @@
 [project]
-name = "innerspace-backend"
+name = "seansarasi-backend"
 version = "0.1.0"
-description = "InnerSpace backend API"
+description = "Seans Arası backend API"
 requires-python = ">=3.13,<3.14"
 dependencies = [
     "alembic>=1.20.1",
