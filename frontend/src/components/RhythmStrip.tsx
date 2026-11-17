@@ -1,10 +1,15 @@
 import type { TrendDay } from '../lib/trend'
 import { Mark } from './Mark'
 
-/** Sleep scale: 10 hours fills the column. */
-const SLEEP_MAX = 10
-/** Share of the column height a full night may take; attack discs stack above it. */
-const SCALE = 86
+/** Headroom (in hours of bar height) a day's attack discs need above its bar. */
+const DISC_ROOM = 1.6
+
+/** The column's top in hours, sized from the data: the tallest bar plus the discs stacked on it,
+ *  so no fixed empty band sits above the bars. */
+export function columnTop(days: TrendDay[]): number {
+  const tops = days.map((d) => (d.sleep ?? 0) + d.attacks.length * DISC_ROOM)
+  return Math.max(4, ...tops) + 0.2
+}
 
 const DAY = new Intl.DateTimeFormat('tr-TR', { day: 'numeric', month: 'short' })
 const WEEKDAY = new Intl.DateTimeFormat('tr-TR', { weekday: 'long', day: 'numeric', month: 'long' })
@@ -15,13 +20,15 @@ const HOURS = new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 1 })
  *  who get the same data as a table. */
 export function RhythmStrip({ days }: { days: TrendDay[] }) {
   const last = days.length - 1
+  const top = columnTop(days)
+  const pct = (h: number) => `${(Math.min(h, top) / top) * 100}%`
   return (
     <figure className="m-0">
       <div aria-hidden>
-        <div className="relative grid h-32 items-end gap-[3px] border-b border-ink pr-9 sm:h-40 sm:gap-1.5" style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))` }}>
+        <div className="relative grid h-28 items-end gap-[3px] border-b border-ink pr-9 sm:h-40 sm:gap-1.5" style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))` }}>
           {/* Hairlines at 4 and 8 hours. */}
-          {[4, 8].map((h) => (
-            <div key={h} className="pointer-events-none absolute inset-x-0 border-t border-dashed border-line" style={{ bottom: `${(h / SLEEP_MAX) * SCALE}%` }}>
+          {[4, 8].filter((h) => h < top).map((h) => (
+            <div key={h} className="pointer-events-none absolute inset-x-0 border-t border-dashed border-line" style={{ bottom: pct(h) }}>
               <span className="num absolute -top-2 right-0 text-[0.6875rem] font-semibold text-muted">{h} sa</span>
             </div>
           ))}
@@ -38,7 +45,7 @@ export function RhythmStrip({ days }: { days: TrendDay[] }) {
               </div>
               <span
                 className={`mark-in block rounded-t-[2px] ${d.sleep == null ? 'mx-auto h-1.5 w-1.5 rounded-full bg-line-strong' : 'w-full bg-sleep'}`}
-                style={d.sleep == null ? { ['--i' as string]: i } : { height: `${(Math.min(d.sleep, SLEEP_MAX) / SLEEP_MAX) * SCALE}%`, ['--i' as string]: i }}
+                style={d.sleep == null ? { ['--i' as string]: i } : { height: pct(d.sleep), ['--i' as string]: i }}
               />
             </div>
           ))}
