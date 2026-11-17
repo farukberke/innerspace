@@ -11,21 +11,22 @@
 
 ## Screenshots
 
-![InnerSpace demo: one-click sign-in as a client, the 21-day rhythm, a source-cited summary, then the clinician seeing it marked new](assets/screenshots/demo.gif)
+![InnerSpace demo: a client signs in, sees the 21-day rhythm and a source-cited summary, then the clinician sees it marked new](assets/screenshots/demo.gif)
 
 | | |
 |---|---|
 | ![Client home: next appointment, 21-day sleep and attack rhythm, last summary](assets/screenshots/client-home.png) | ![Client view of a shared summary; each statement opens the client's own source entries](assets/screenshots/client-summary.png) |
 | ![Clinician client list with new-summary markers and last share dates](assets/screenshots/clinician-clients.png) | ![Clinician view of a summary the client chose to share](assets/screenshots/clinician-summary.png) |
-| ![Landing page](assets/screenshots/landing.png) | ![Sign-in](assets/screenshots/login.png) |
-| ![Client entries, each kind with its own mark](assets/screenshots/client-entries.png) | ![Clinician view of one client: shared summaries, plan and appointments](assets/screenshots/clinician-client-detail.png) |
-| ![Client support plan editor](assets/screenshots/client-plan.png) | ![Clinic admin user management](assets/screenshots/admin-users.png) |
+| ![Landing page](assets/screenshots/landing.png) | ![Landing: how it works and the therapy-room cover](assets/screenshots/landing-room.png) |
+| ![Sign-in with the therapy-room illustration](assets/screenshots/login.png) | ![Client entries, each kind with its own mark](assets/screenshots/client-entries.png) |
+| ![Clinician view of one client: shared summaries, plan and appointments](assets/screenshots/clinician-client-detail.png) | ![Client support plan editor](assets/screenshots/client-plan.png) |
+| ![Clinic admin user management](assets/screenshots/admin-users.png) | |
 
 | Phone | | |
 |---|---|---|
 | <img src="assets/screenshots/client-home-mobile.png" alt="Client home on a phone" width="240"> | <img src="assets/screenshots/client-menu-mobile.png" alt="Phone navigation: tab bar and the Daha sheet" width="240"> | <img src="assets/screenshots/client-moment-mobile.png" alt="In the moment card on a phone" width="240"> |
 
-The visual language borrows from 1960s-80s Istanbul graphic modernism: a cobalt shell, one typeface (Archivo), and one geometric mark per record kind (attack disc sized by intensity, sleep bar, medication square, avoidance ring), used the same way in the trend strip, entry list and summaries. The landing cover is a generated abstract poster (no people, no real data).
+The visual language is a quiet therapy room: a soft cobalt shell on warm off-white, one typeface (Archivo), and a logo of two armchairs facing each other. The landing cover, sign-in panel and "how it works" illustrations are generated (GPT-6 Astra, one flat editorial style, no faces, no real data). Inside the app, colour beyond the shell appears only where it encodes data: each record kind has one mark (attack disc sized by intensity, sleep bar, medication square, avoidance ring), used the same way in the trend strip, entry list and summaries.
 
 ## Features
 
@@ -43,8 +44,6 @@ The visual language borrows from 1960s-80s Istanbul graphic modernism: a cobalt 
 **Clinician**
 - Sees assigned clients and only the summaries (and plan) a client has approved and shared; creates, edits and deletes appointments of assigned clients.
 - The client list shows each client's last share date and how many shared summaries are new (not opened since they were shared or re-shared), with a direct link to the newest one. Opening a summary records a content-free read receipt.
-
-**Demo sign-in**
 
 **Clinic admin (`org_admin`)**
 - Invites users, activates/deactivates them and manages clinician-client assignments. Sees no clinical content.
@@ -86,7 +85,7 @@ Enforced in the backend (role dependencies + scoped queries), never by the LLM. 
 | Users and assignments management | none | none | none | read/write (own org only) | none |
 | Export / delete account | own data only | none | none | none | none |
 
-Covered by: `backend/tests/test_auth_rbac.py` (roles, isolation, admin, invitations), `test_planning.py` (appointments and plan: assigned / unassigned / other org / admin), `test_phase8.py` (topics, reminders, export, delete), `test_ai.py` and `test_jobs.py` (summary generation, sharing and job access), `test_entries.py`, `test_demo_and_sharing.py` (demo sign-in, sharing overview isolation), `test_predeploy_fixes.py`, and `test_observability.py` (no content in logs).
+Covered by: `backend/tests/test_auth_rbac.py` (roles, isolation, admin, invitations), `test_planning.py` (appointments and plan: assigned / unassigned / other org / admin), `test_phase8.py` (topics, reminders, export, delete), `test_ai.py` and `test_jobs.py` (summary generation, sharing and job access), `test_entries.py`, `test_sharing_overview.py` (sharing overview isolation), `test_predeploy_fixes.py`, and `test_observability.py` (no content in logs).
 
 ## AI safety
 
@@ -131,8 +130,8 @@ The injection and citation evals run as assertions in `tests/test_evals.py` (`py
 ## Testing
 
 ```bash
-cd backend && uv run pytest -q    # 494 passed (real PostgreSQL)
-cd frontend && npx vitest run     # 79 passed (11 test files)
+cd backend && uv run pytest -q    # 487 passed (real PostgreSQL)
+cd frontend && npx vitest run     # 76 passed (11 test files)
 ```
 
 CI (`.github/workflows/ci.yml`) runs on every push and PR: backend (Postgres + Redis, migrations, pytest, ruff, pip-audit), frontend (lint, tests, build, npm audit) and a Docker image build.
