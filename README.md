@@ -5,7 +5,7 @@
 **A between-sessions notebook for people in therapy or psychiatric care:** clients log what happens between appointments, and an AI assistant turns their own entries into a short, source-cited summary that they review, approve and choose to share with their clinician.
 
 > [!WARNING]
-> **Portfolio project, synthetic data only.** Seans Arası is not a medical device, does not diagnose, and does not provide treatment or crisis support. Do not enter real personal or health information. If you are in crisis, contact your local emergency number (112 in Türkiye).
+> **Synthetic data only.** Seans Arası is not a medical device, does not diagnose, and does not provide treatment or crisis support. Do not enter real personal or health information. If you are in crisis, contact your local emergency number (112 in Türkiye).
 
 **Live demo:** https://seansarasi.online (Turkish UI). Demo accounts (synthetic client, clinician and clinic admin) are available on request. The free instance may take a minute to wake up.
 
@@ -108,7 +108,7 @@ The injection and citation evals run as assertions in `tests/test_evals.py` (`py
 
 ## Design decisions
 
-- **Synthetic data only.** Why: no real health data in a portfolio project. Cost: demo content is fictional; the code is still written to production standards.
+- **Synthetic data only.** Why: no real health data in a public demo. Cost: demo content is fictional; the code is still written to production standards.
 - **B2B2C (clinic, clinician, client).** Why: mirrors how care is organized and makes isolation a real problem to solve. Cost: more roles and assignment logic.
 - **Simple monolith (FastAPI).** Why: one deployable unit is easy to reason about and test. Cost: API and worker scale together.
 - **The LLM does no authorization.** Why: a model cannot be a trust boundary. Cost: more backend code for scoped tools and checks.
