@@ -146,7 +146,7 @@ export function ClinicianClientDetail() {
           {client && (
             <p className="num mt-2 text-base text-ink-2">
               {client.last_shared_at ? `Son paylaşım ${formatDate(client.last_shared_at)}` : 'Henüz özet paylaşmadı'}
-              {client.new_summaries > 0 && <span className="font-bold text-danger-700"> · {client.new_summaries} yeni özet</span>}
+              {client.new_summaries > 0 && <span className="font-bold text-brand-700"> · {client.new_summaries} yeni özet</span>}
             </p>
           )}
         </div>
@@ -221,8 +221,8 @@ function ClientSummaries({ clientId }: { clientId: string }) {
                   <p className="flex flex-wrap items-center gap-x-3 gap-y-1">
                     <span className="font-bold group-hover:underline group-hover:underline-offset-4">{s.title}</span>
                     {s.is_new && (
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-danger-50 px-2.5 py-0.5 text-[0.8125rem] font-bold text-danger-700">
-                        <span aria-hidden className="h-2 w-2 rounded-full bg-attack" />
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-2.5 py-0.5 text-[0.8125rem] font-bold text-brand-800">
+                        <span aria-hidden className="h-2 w-2 rounded-full bg-brand-600" />
                         Yeni
                       </span>
                     )}

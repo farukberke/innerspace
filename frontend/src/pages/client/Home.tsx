@@ -49,7 +49,7 @@ function Rhythm({ now }: { now: Date }) {
         <Spinner />
       ) : (
         <>
-          <div className="mt-5">
+          <div className="mt-3">
             <RhythmStrip days={days} />
           </div>
           {stats.daysWithRecords === 0 ? (

@@ -93,10 +93,10 @@ function MomentButton({ withHint = false, className = '' }: { withHint?: boolean
     <Link
       to="/client/moment"
       aria-label="O an: zor bir an için planın"
-      className={`btn inline-flex min-h-11 flex-col items-start justify-center rounded-soft border border-danger-200 bg-danger-50 px-4 py-1.5 leading-tight text-danger-800 hover:bg-danger-100 ${className}`}
+      className={`btn inline-flex min-h-11 flex-col items-start justify-center rounded-soft bg-attack px-4 py-1.5 leading-tight hover:brightness-95 ${className}`}
     >
-      <span className="text-base font-extrabold">O an</span>
-      {withHint && <span className="text-[0.8125rem] font-semibold text-danger-700">Zor bir an için planın</span>}
+      <span className="text-lg font-extrabold text-white [font-stretch:115%]">O an</span>
+      {withHint && <span className="text-[0.8125rem] font-semibold text-ink">Zor bir an için planın</span>}
     </Link>
   )
 }

@@ -22,8 +22,8 @@ export function sortClients(items: ClientRead[]): ClientRead[] {
 
 function NewDot({ label }: { label: string }) {
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-danger-50 px-2.5 py-0.5 text-[0.8125rem] font-bold text-danger-700">
-      <span aria-hidden className="h-2 w-2 rounded-full bg-attack" />
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-2.5 py-0.5 text-[0.8125rem] font-bold text-brand-800">
+      <span aria-hidden className="h-2 w-2 rounded-full bg-brand-600" />
       {label}
     </span>
   )
@@ -203,7 +203,7 @@ export function ClinicianSummaryDetail() {
               <h2 id="topics-title" className="text-[1.0625rem] font-extrabold">
                 Danışanın konuşmak istediği konular
               </h2>
-              <ul className="mt-3 list-disc space-y-1.5 pl-5 text-[1.0625rem] leading-relaxed marker:text-sleep">
+              <ul className="mt-3 list-disc space-y-1.5 pl-5 text-[1.0625rem] leading-relaxed marker:text-brand-200">
                 {data.topics.map((t, i) => (
                   <li key={i} className="break-words">
                     {t}

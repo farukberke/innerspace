@@ -16,7 +16,7 @@ const SAMPLE_DAYS: { sleep: number; attacks: number[] }[] = [
 
 function ProductSample() {
   return (
-    <div role="group" aria-label="Uygulama ekranı örneği, sentetik veri" className="rounded-soft-lg bg-surface p-5 text-ink shadow-[0_24px_60px_-20px_rgba(10,16,48,0.55)] sm:p-6">
+    <div role="group" aria-label="Uygulama ekranı örneği, sentetik veri" className="rounded-soft-lg bg-surface p-5 text-ink sm:p-6">
       <div className="flex items-baseline justify-between gap-3">
         <p className="text-[1.0625rem] font-extrabold">Son 21 gün</p>
         <p className="text-[0.8125rem] font-semibold text-muted">örnek ekran · sentetik veri</p>
