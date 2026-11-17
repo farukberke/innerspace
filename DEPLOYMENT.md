@@ -29,6 +29,7 @@ Cost-optimised layout for a demo: **one** paid Render instance, everything else 
 | `METRICS_TOKEN` | api | optional; blank = `/metrics` is 404 |
 | `LOGFIRE_TOKEN` | api | optional; blank = tracing off |
 | `SEED_PASSWORD`, `SEED_DEMO=1` | api (temporary) | only for the demo seed, see below |
+| `DEMO_LOGIN_ENABLED` | api | `true` in `render.yaml`: one-click sign-in to the seeded `demo-clinic` accounts; never enable with real users |
 
 Free-tier notes: Supabase pauses projects after a period of inactivity (beat's periodic jobs query the database, which normally keeps it active; a paused project is resumed from the Supabase dashboard). The pool is kept small (`DB_POOL_SIZE=3`, `DB_MAX_OVERFLOW=2`) for the pooler's connection limit.
 
@@ -47,6 +48,8 @@ To restore the demo to a clean state (e.g. after many visitors), run the same co
 ```bash
 SEED_DEMO=1 SEED_PASSWORD='<choose 12+ chars>' python -m app.seed --reset
 ```
+
+With `DEMO_LOGIN_ENABLED=true` visitors sign in from the login page as the demo client (Ayşe), clinician (Dr. Elif) or clinic admin with one click; the seed password is never needed in the browser. Demo sign-in is rate limited per IP and audited. Run `--reset` after a release that changes the seed (for example the sleep hours added to quick entries) so the demo shows it.
 
 The password is never in the repo or printed. All demo users share it:
 

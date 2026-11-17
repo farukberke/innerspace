@@ -7,24 +7,32 @@
 > [!WARNING]
 > **Portfolio project, synthetic data only.** InnerSpace is not a medical device, does not diagnose, and does not provide treatment or crisis support. Do not enter real personal or health information. If you are in crisis, contact your local emergency number (112 in Türkiye).
 
-**Live demo:** https://innerspace-web.onrender.com (Turkish UI; demo accounts available on request).
+**Live demo:** https://innerspace-web.onrender.com (Turkish UI). On the sign-in page, choose **Danışan / Uzman / Yönetici olarak dene** to enter as the synthetic client, clinician or clinic admin with one click. The free instance may take a minute to wake up.
 
 ## Screenshots
 
-![InnerSpace demo: a client reviews an AI summary and shares it with their clinician](assets/screenshots/demo.gif)
+![InnerSpace demo: one-click sign-in as a client, the 21-day rhythm, a source-cited summary, then the clinician seeing it marked new](assets/screenshots/demo.gif)
 
 | | |
 |---|---|
-| ![Landing page](assets/screenshots/landing.png) | ![Client view of a shared, source-cited summary](assets/screenshots/client-summary.png) |
-| ![Clinician view of a summary the client chose to share](assets/screenshots/clinician-summary.png) | ![Client support plan editor](assets/screenshots/client-plan.png) |
-| ![Client "in the moment" card with large steps and contacts](assets/screenshots/client-moment.png) | ![Clinician view of one client: appointments and shared plan](assets/screenshots/clinician-client-detail.png) |
-| ![Clinic admin user management](assets/screenshots/admin-users.png) | <img src="assets/screenshots/client-moment-mobile.png" alt="In the moment card on a phone-sized screen" width="240"> |
+| ![Client home: next appointment, 21-day sleep and attack rhythm, last summary](assets/screenshots/client-home.png) | ![Client view of a shared summary; each statement opens the client's own source entries](assets/screenshots/client-summary.png) |
+| ![Clinician client list with new-summary markers and last share dates](assets/screenshots/clinician-clients.png) | ![Clinician view of a summary the client chose to share](assets/screenshots/clinician-summary.png) |
+| ![Landing page](assets/screenshots/landing.png) | ![Sign-in with one-click demo roles](assets/screenshots/login.png) |
+| ![Client entries, each kind with its own mark](assets/screenshots/client-entries.png) | ![Clinician view of one client: shared summaries, plan and appointments](assets/screenshots/clinician-client-detail.png) |
+| ![Client support plan editor](assets/screenshots/client-plan.png) | ![Clinic admin user management](assets/screenshots/admin-users.png) |
+
+| Phone | | |
+|---|---|---|
+| <img src="assets/screenshots/client-home-mobile.png" alt="Client home on a phone" width="240"> | <img src="assets/screenshots/client-menu-mobile.png" alt="Phone navigation: tab bar and the Daha sheet" width="240"> | <img src="assets/screenshots/client-moment-mobile.png" alt="In the moment card on a phone" width="240"> |
+
+The visual language borrows from 1960s-80s Istanbul graphic modernism: a cobalt shell, one typeface (Archivo), and one geometric mark per record kind (attack disc sized by intensity, sleep bar, medication square, avoidance ring), used the same way in the trend strip, entry list and summaries. The landing cover is a generated abstract poster (no people, no real data).
 
 ## Features
 
 **Client**
-- **Entries:** quick entries, panic episode logs, medication and side-effect notes, avoidance notes. Visible only to the client.
-- **AI summary:** pre-appointment summary where every statement cites the client's own entries. The client edits, approves and shares it; sharing can be revoked. The client can add their own "topics to talk about" (never AI-written, same guardrails).
+- **Home ("Bugün"):** the next appointment with a one-tap "prepare" or "open summary", the last summary, and a 21-day strip of recorded sleep and attacks (computed from the client's own entries, no AI), described in plain sentences rather than scores.
+- **Entries:** quick entries (with optional sleep hours), panic episode logs, medication and side-effect notes, avoidance notes. Visible only to the client.
+- **AI summary:** pre-appointment summary where every statement cites the client's own entries (each statement opens those entries). The client edits, approves and shares it; sharing can be revoked. The client can add their own "topics to talk about" (never AI-written, same guardrails).
 - **After-session note:** a short note structured into "what we discussed / what I'll try / questions for next time".
 - **Appointments:** read-only for the client; a summary can be prepared for a specific appointment.
 - **"Planım" and the "O an" card:** a support plan written by the client, with a card for difficult moments; optionally shared read-only with the clinician.
@@ -34,6 +42,10 @@
 
 **Clinician**
 - Sees assigned clients and only the summaries (and plan) a client has approved and shared; creates, edits and deletes appointments of assigned clients.
+- The client list shows each client's last share date and how many shared summaries are new (not opened since they were shared or re-shared), with a direct link to the newest one. Opening a summary records a content-free read receipt.
+
+**Demo sign-in**
+- With `DEMO_LOGIN_ENABLED=true` (the public demo only), `POST /api/v1/auth/demo-login {"role": "client" | "clinician" | "org_admin"}` signs into the seeded `demo-clinic` account of that role. No password is involved or shipped to the browser; it is rate limited per IP and audited (`auth.demo_login`), works for no other account, and while enabled the demo admin cannot deactivate the demo accounts or remove their assignment. Off by default.
 
 **Clinic admin (`org_admin`)**
 - Invites users, activates/deactivates them and manages clinician-client assignments. Sees no clinical content.
@@ -67,6 +79,7 @@ Enforced in the backend (role dependencies + scoped queries), never by the LLM. 
 | Entries (log, panic, medication, avoidance) | read/write | none | none | none | none |
 | Summary drafts, unshared summaries, topics | read/write/approve | none | none | none | none |
 | Shared summary (incl. topics) | read, unshare | read-only, only while shared (and shared after the assignment began) | none | none | none |
+| Sharing metadata (last share date, new count) | n/a | read, counting only summaries it may read | none | none | none |
 | After-session notes | read/write | none | none | none | none |
 | Appointments | read-only | read/write (create, edit, delete) | none | none | none |
 | Plan ("Planım") | read/write | none | none | none | none |
@@ -74,7 +87,7 @@ Enforced in the backend (role dependencies + scoped queries), never by the LLM. 
 | Users and assignments management | none | none | none | read/write (own org only) | none |
 | Export / delete account | own data only | none | none | none | none |
 
-Covered by: `backend/tests/test_auth_rbac.py` (roles, isolation, admin, invitations), `test_planning.py` (appointments and plan: assigned / unassigned / other org / admin), `test_phase8.py` (topics, reminders, export, delete), `test_ai.py` and `test_jobs.py` (summary generation, sharing and job access), `test_entries.py`, `test_predeploy_fixes.py`, and `test_observability.py` (no content in logs).
+Covered by: `backend/tests/test_auth_rbac.py` (roles, isolation, admin, invitations), `test_planning.py` (appointments and plan: assigned / unassigned / other org / admin), `test_phase8.py` (topics, reminders, export, delete), `test_ai.py` and `test_jobs.py` (summary generation, sharing and job access), `test_entries.py`, `test_demo_and_sharing.py` (demo sign-in, sharing overview isolation), `test_predeploy_fixes.py`, and `test_observability.py` (no content in logs).
 
 ## AI safety
 
@@ -119,8 +132,8 @@ The injection and citation evals run as assertions in `tests/test_evals.py` (`py
 ## Testing
 
 ```bash
-cd backend && uv run pytest -q    # 482 passed (real PostgreSQL)
-cd frontend && npx vitest run     # 60 passed (8 test files)
+cd backend && uv run pytest -q    # 494 passed (real PostgreSQL)
+cd frontend && npx vitest run     # 79 passed (11 test files)
 ```
 
 CI (`.github/workflows/ci.yml`) runs on every push and PR: backend (Postgres + Redis, migrations, pytest, ruff, pip-audit), frontend (lint, tests, build, npm audit) and a Docker image build.
@@ -137,6 +150,7 @@ uv sync
 uv run pre-commit install     # secret scanning and lint checks before each commit
 uv run alembic upgrade head
 uv run python -m app.seed     # synthetic demo data; prints a random password unless SEED_PASSWORD is set
+                              # DEMO_LOGIN_ENABLED=true in .env adds the one-click demo buttons
 uv run uvicorn app.main:create_app --factory --reload
 ```
 
@@ -156,7 +170,7 @@ Render Blueprint (`render.yaml`): one web service running the API plus a thread-
 
 ## Project status
 
-Phases 0-8 are complete: repository and tooling, backend foundation, authentication and authorization, AI summaries, background jobs, evaluation and observability, Docker/CI/Render, appointments and support plan, and topics, reminders, data export and deletion. The React frontend covers client, clinician and clinic-admin screens.
+Phases 0-8 are complete: repository and tooling, backend foundation, authentication and authorization, AI summaries, background jobs, evaluation and observability, Docker/CI/Render, appointments and support plan, and topics, reminders, data export and deletion. The React frontend covers client, clinician and clinic-admin screens; it was redesigned afterwards (new visual identity, client home, clinician sharing status, one-click demo sign-in).
 
 ## License
 
