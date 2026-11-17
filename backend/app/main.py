@@ -46,7 +46,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     docs_enabled = not settings.is_production
     app = FastAPI(
-        title="InnerSpace API",
+        title="Seans Arası API",
         version="0.1.0",
         lifespan=lifespan,
         docs_url="/docs" if docs_enabled else None,

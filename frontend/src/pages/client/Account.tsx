@@ -26,7 +26,7 @@ export function Account() {
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = 'innerspace-verilerim.json'
+      a.download = 'seansarasi-verilerim.json'
       a.click()
       URL.revokeObjectURL(url)
     } catch (err) {

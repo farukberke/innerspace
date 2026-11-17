@@ -146,7 +146,7 @@ export function Landing() {
             Haftada 50 dakika seans, arada bir hafta hayat.
           </h2>
           <p className="mt-5 max-w-[60ch] text-lg text-ink-2">
-            Seansın ilk dakikaları çoğu zaman “bu hafta ne oldu”yu toparlamaya gider. InnerSpace o haftayı seansa hazır getirir.
+            Seansın ilk dakikaları çoğu zaman “bu hafta ne oldu”yu toparlamaya gider. Seans Arası o haftayı seansa hazır getirir.
           </p>
           <ol className="mt-14 grid gap-x-8 gap-y-10 border-t border-ink pt-8 sm:grid-cols-2 lg:grid-cols-4">
             {STEPS.map((s) => (
@@ -213,7 +213,7 @@ export function Landing() {
 
       <footer className="border-t border-line py-8">
         <div className={`${wrap} flex flex-col gap-2 text-[0.9375rem] text-ink-2 sm:flex-row sm:justify-between`}>
-          <p>InnerSpace · Gerçek kişisel veya sağlık bilgisi girme.</p>
+          <p>Seans Arası · Gerçek kişisel veya sağlık bilgisi girme.</p>
           <p>Tıbbi tavsiye vermez; teşhis veya tedavi aracı değildir.</p>
         </div>
       </footer>

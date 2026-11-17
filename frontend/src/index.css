@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* InnerSpace: a calm therapy-room palette. Soft cobalt owns the shell; data marks keep one colour
+/* Seans Arası: a calm therapy-room palette. Soft cobalt owns the shell; data marks keep one colour
    per record kind (attack = coral, sleep = sand gold, medication = sage, avoidance = ink ring) and
    appear only where they encode data. Ink on warm off-white with 1px hairlines. One family: Archivo. */
 @theme {

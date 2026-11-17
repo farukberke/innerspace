@@ -32,6 +32,17 @@ Cost-optimised layout for a demo: **one** paid Render instance, everything else 
 
 Free-tier notes: Supabase pauses projects after a period of inactivity (beat's periodic jobs query the database, which normally keeps it active; a paused project is resumed from the Supabase dashboard). The pool is kept small (`DB_POOL_SIZE=3`, `DB_MAX_OVERFLOW=2`) for the pooler's connection limit.
 
+## Custom domain
+
+The public site runs on `seansarasi.online` (registrar DNS, no proxy):
+
+| Host | Render service | DNS record |
+|---|---|---|
+| `seansarasi.online`, `www.seansarasi.online` | `innerspace-web` | as shown under *Settings → Custom Domains* |
+| `api.seansarasi.online` | `innerspace-api` | CNAME to `innerspace-api.onrender.com` |
+
+After Render verifies the domains and issues certificates, set `VITE_API_URL=https://api.seansarasi.online` on `innerspace-web` (then redeploy, it is read at build time) and `CORS_ORIGINS=https://seansarasi.online,https://www.seansarasi.online` on `innerspace-api`.
+
 ## Demo accounts
 
 Public sign-up stays closed. To load the synthetic demo clinics once, open a Shell on the API service (or add the two variables and a one-off job) and run:
@@ -58,7 +69,7 @@ The password is never in the repo or printed. All demo users share it:
 | Clinician | `dr.elif@demo-clinic.test`, `dr.mert@demo-clinic.test` |
 | Client | `client.ayse@demo-clinic.test`, `client.can@demo-clinic.test`, `client.zeynep@demo-clinic.test` |
 
-Live demo: https://innerspace-web.onrender.com. The login screen shows the synthetic-data warning.
+Live demo: https://seansarasi.online (Render: `innerspace-web` / `innerspace-api`). The login screen shows the synthetic-data warning.
 
 ## Production readiness checklist
 

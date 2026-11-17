@@ -32,7 +32,7 @@ async def export_account(
     response: Response, session: SessionDep, client: CurrentClient
 ) -> AccountExport:
     """All of the caller's own data as a JSON download."""
-    response.headers["Content-Disposition"] = 'attachment; filename="innerspace-verilerim.json"'
+    response.headers["Content-Disposition"] = 'attachment; filename="seansarasi-verilerim.json"'
     response.headers["Cache-Control"] = "no-store"
     return await service.export_data(session, client)
 

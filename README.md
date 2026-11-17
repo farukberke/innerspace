@@ -1,17 +1,17 @@
-# InnerSpace
+# Seans Arası
 
 [![CI](https://github.com/farukberke/innerspace/actions/workflows/ci.yml/badge.svg)](https://github.com/farukberke/innerspace/actions/workflows/ci.yml)
 
 **A between-sessions notebook for people in therapy or psychiatric care:** clients log what happens between appointments, and an AI assistant turns their own entries into a short, source-cited summary that they review, approve and choose to share with their clinician.
 
 > [!WARNING]
-> **Portfolio project, synthetic data only.** InnerSpace is not a medical device, does not diagnose, and does not provide treatment or crisis support. Do not enter real personal or health information. If you are in crisis, contact your local emergency number (112 in Türkiye).
+> **Portfolio project, synthetic data only.** Seans Arası is not a medical device, does not diagnose, and does not provide treatment or crisis support. Do not enter real personal or health information. If you are in crisis, contact your local emergency number (112 in Türkiye).
 
-**Live demo:** https://innerspace-web.onrender.com (Turkish UI). Demo accounts (synthetic client, clinician and clinic admin) are available on request. The free instance may take a minute to wake up.
+**Live demo:** https://seansarasi.online (Turkish UI). Demo accounts (synthetic client, clinician and clinic admin) are available on request. The free instance may take a minute to wake up.
 
 ## Screenshots
 
-![InnerSpace demo: a client signs in, sees the 21-day rhythm and a source-cited summary, then the clinician sees it marked new](assets/screenshots/demo.gif)
+![Seans Arası demo: a client signs in, sees the 21-day rhythm and a source-cited summary, then the clinician sees it marked new](assets/screenshots/demo.gif)
 
 | | |
 |---|---|

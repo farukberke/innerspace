@@ -52,7 +52,7 @@ export function Logo({ inverted = false, className = '' }: { inverted?: boolean;
     <span className={`inline-flex items-center gap-2.5 ${className}`}>
       <LogoMark inverted={inverted} />
       <span className={`text-[1.375rem] font-extrabold tracking-tight ${inverted ? 'text-white' : 'text-ink'}`}>
-        InnerSpace
+        Seans Arası
       </span>
     </span>
   )
@@ -246,7 +246,7 @@ export function Layout() {
         <DemoBanner />
         {/* Phone/tablet: slim top bar; destinations live in the bottom tab bar. */}
         <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-line bg-paper/95 px-4 py-2.5 backdrop-blur lg:hidden">
-          <Link to={HOME_BY_ROLE[user.role]} aria-label="InnerSpace ana sayfa">
+          <Link to={HOME_BY_ROLE[user.role]} aria-label="Seans Arası ana sayfa">
             <Logo />
           </Link>
           {user.role === 'client' && <MomentButton />}
