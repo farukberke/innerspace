@@ -131,6 +131,27 @@ class Summary(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
 
 
+class SummaryReceipt(Base):
+    """When a clinician last opened a shared summary. A summary is "new" for that clinician
+    while it was (re)shared after this time or never opened. Holds no content."""
+
+    __tablename__ = "summary_reads"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["clinician_id", "organization_id"],
+            ["users.id", "users.organization_id"],
+            ondelete="CASCADE",
+        ),
+    )
+
+    summary_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("summaries.id", ondelete="CASCADE"), primary_key=True
+    )
+    clinician_id: Mapped[uuid.UUID] = mapped_column(primary_key=True)
+    organization_id: Mapped[uuid.UUID]
+    read_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
 class SummaryJobStatus(StrEnum):
     QUEUED = "queued"
     RUNNING = "running"

@@ -142,9 +142,11 @@ async def unshare_summary(
 async def list_clients(session: SessionDep, clinician: CurrentClinician) -> list[ClientRead]:
     clients = await people.list_assigned_clients(session, clinician)
     upcoming = await appointments.next_for_clients(session, clinician, [c.id for c in clients])
+    sharing = await service.sharing_overview(session, clinician)
     items = [ClientRead.model_validate(c) for c in clients]
     for item in items:
         item.next_appointment_at = upcoming.get(item.id)
+        item.last_shared_at, item.new_summaries = sharing.get(item.id, (None, 0))
     return items
 
 
@@ -153,7 +155,9 @@ async def list_shared_summaries(
     session: SessionDep, clinician: CurrentClinician
 ) -> list[SummaryListItem]:
     items = await service.list_shared_with(session, clinician)
-    return [SummaryListItem.model_validate(s) for s in items]
+    return [
+        SummaryListItem.model_validate(s).model_copy(update={"is_new": new}) for s, new in items
+    ]
 
 
 @router.get("/clinician/summaries/{summary_id}")

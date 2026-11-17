@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_vali
 
 from app.models import Summary, SummaryJobStatus, SummaryStatus, UserRole
 from app.schemas.planning import PlanContact
+from app.services.demo import DemoRole
 
 MAX_PERIOD_DAYS = 92
 
@@ -42,7 +43,8 @@ class UserRead(BaseModel):
 
 
 class ClientRead(BaseModel):
-    """What a clinician sees about an assigned client: identity only."""
+    """What a clinician sees about an assigned client: identity plus sharing metadata (never
+    content). The sharing fields count only summaries this clinician may see."""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -50,6 +52,18 @@ class ClientRead(BaseModel):
     display_name: str
     # The client's next clinic appointment with the requesting clinician (list endpoint only).
     next_appointment_at: datetime | None = None
+    # Latest `shared_at` among the summaries currently shared with this clinician.
+    last_shared_at: datetime | None = None
+    # Shared summaries this clinician has not opened since they were (re)shared.
+    new_summaries: int = 0
+
+
+class DemoLoginStatus(BaseModel):
+    enabled: bool
+
+
+class DemoLoginRequest(BaseModel):
+    role: DemoRole
 
 
 class InvitationCreate(BaseModel):
@@ -203,6 +217,8 @@ class SummaryListItem(BaseModel):
     period_end: date | None
     shared_at: datetime | None
     created_at: datetime
+    # Not opened by the requesting clinician since it was (re)shared.
+    is_new: bool = False
 
 
 class SharedSummaryRead(SummaryListItem):

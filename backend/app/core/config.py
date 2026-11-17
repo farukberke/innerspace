@@ -56,6 +56,9 @@ class Settings(BaseSettings):
     seed_password: SecretStr | None = None  # demo seed only
     # Explicit opt-in to run the (synthetic) demo seed with APP_ENV=production.
     seed_demo: bool = False
+    # One-click demo sign-in (POST /auth/demo-login) for the seeded demo-clinic accounts only.
+    # Off by default; the public demo deployment turns it on explicitly.
+    demo_login_enabled: bool = False
 
     # AI. Without an API key the AI endpoints answer 503. The key only ever comes from the env.
     llm_model: str = "anthropic:claude-sonnet-5-5"  # "<provider>:<model>"; only anthropic for now
@@ -85,6 +88,7 @@ class Settings(BaseSettings):
     rate_limit_export: str = "5/hour"  # per user: GET /account/export
     rate_limit_account_delete: str = "5/hour"  # per user: DELETE /account (password guesses)
     rate_limit_topics: str = "60/hour"  # per user: PUT /summaries/{id}/topics
+    rate_limit_demo_login: str = "10/minute"  # per IP: POST /auth/demo-login
     # The client's calendar day for in-app reminders ("tomorrow's appointment").
     reminder_timezone: str = "Europe/Istanbul"
     # Rolling 24h budget per user across all LLM calls (`llm_usage`); 0 disables a cap.
@@ -127,6 +131,7 @@ class Settings(BaseSettings):
         "rate_limit_export",
         "rate_limit_account_delete",
         "rate_limit_topics",
+        "rate_limit_demo_login",
     )
     @classmethod
     def _valid_rate_limit(cls, value: str) -> str:

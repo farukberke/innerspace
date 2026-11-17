@@ -3,13 +3,22 @@ assigned to them. Every query is scoped by organization and ownership/assignment
 
 import uuid
 from datetime import UTC, datetime
+from typing import Any
 
-from sqlalchemy import Select, select
+from sqlalchemy import ColumnElement, Select, func, or_, select
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.crisis import contains_crisis_language
 from app.ai.guardrails import find_violations
-from app.models import CareAssignment, Summary, SummaryStatement, SummaryStatus, User
+from app.models import (
+    CareAssignment,
+    Summary,
+    SummaryReceipt,
+    SummaryStatement,
+    SummaryStatus,
+    User,
+)
 from app.services import audit
 from app.services.errors import (
     ConflictError,
@@ -198,15 +207,60 @@ async def set_shared(
     return summary
 
 
-async def list_shared_with(session: AsyncSession, clinician: User) -> list[Summary]:
-    query = _shared_with(clinician).order_by(Summary.shared_at.desc(), Summary.id)
-    return list((await session.scalars(query)).all())
+def _is_new() -> ColumnElement[bool]:
+    """True while the summary was never opened by the receipt's clinician, or re-shared since."""
+    return or_(SummaryReceipt.read_at.is_(None), SummaryReceipt.read_at < Summary.shared_at)
+
+
+def _visible_with_flag(clinician: User) -> Select[Any]:
+    """`_shared_with(clinician)` plus an `is_new` column for that clinician."""
+    return (
+        _shared_with(clinician)
+        .add_columns(_is_new().label("is_new"))
+        .outerjoin(
+            SummaryReceipt,
+            (SummaryReceipt.summary_id == Summary.id)
+            & (SummaryReceipt.clinician_id == clinician.id),
+        )
+    )
+
+
+async def list_shared_with(session: AsyncSession, clinician: User) -> list[tuple[Summary, bool]]:
+    """Shared summaries visible to `clinician`, newest share first, each with its "new" flag."""
+    query = _visible_with_flag(clinician).order_by(Summary.shared_at.desc(), Summary.id)
+    return [(summary, bool(is_new)) for summary, is_new in await session.execute(query)]
+
+
+async def sharing_overview(
+    session: AsyncSession, clinician: User
+) -> dict[uuid.UUID, tuple[datetime, int]]:
+    """Per assigned client: latest share and number of unopened shares, counting only the
+    summaries this clinician may see (same scope as `list_shared_with`). Metadata only."""
+    visible = _visible_with_flag(clinician).subquery()
+    query = select(
+        visible.c.client_id,
+        func.max(visible.c.shared_at),
+        func.count().filter(visible.c.is_new),
+    ).group_by(visible.c.client_id)
+    return {client_id: (last, int(new)) for client_id, last, new in await session.execute(query)}
 
 
 async def get_shared_with(session: AsyncSession, clinician: User, summary_id: uuid.UUID) -> Summary:
     summary = await session.scalar(_shared_with(clinician).where(Summary.id == summary_id))
     if summary is None:
         raise NotFoundError
+    upsert = insert(SummaryReceipt).values(
+        summary_id=summary.id,
+        clinician_id=clinician.id,
+        organization_id=clinician.organization_id,
+        read_at=datetime.now(UTC),
+    )
+    await session.execute(
+        upsert.on_conflict_do_update(
+            index_elements=[SummaryReceipt.summary_id, SummaryReceipt.clinician_id],
+            set_={"read_at": upsert.excluded.read_at},
+        )
+    )
     await audit.record(
         session,
         "summary.view",

@@ -19,8 +19,16 @@ async def list_users(session: AsyncSession, admin: User, role: UserRole | None) 
     return list((await session.scalars(query.order_by(User.display_name, User.id))).all())
 
 
+DEMO_PROTECTED_MESSAGE = "Demo accounts cannot be changed while demo login is enabled"
+
+
 async def set_user_active(
-    session: AsyncSession, admin: User, user_id: uuid.UUID, active: bool
+    session: AsyncSession,
+    admin: User,
+    user_id: uuid.UUID,
+    active: bool,
+    *,
+    protected_ids: frozenset[uuid.UUID] = frozenset(),
 ) -> User:
     user = await session.scalar(
         select(User).where(User.id == user_id, User.organization_id == admin.organization_id)
@@ -29,6 +37,8 @@ async def set_user_active(
         raise NotFoundError
     if user.id == admin.id:
         raise ConflictError("You cannot change your own status")
+    if not active and user.id in protected_ids:
+        raise ConflictError(DEMO_PROTECTED_MESSAGE)
     user.is_active = active
     await audit.record(
         session,
@@ -93,7 +103,13 @@ async def create_assignment(
     return assignment
 
 
-async def delete_assignment(session: AsyncSession, admin: User, assignment_id: uuid.UUID) -> None:
+async def delete_assignment(
+    session: AsyncSession,
+    admin: User,
+    assignment_id: uuid.UUID,
+    *,
+    protected_ids: frozenset[uuid.UUID] = frozenset(),
+) -> None:
     assignment = await session.scalar(
         select(CareAssignment).where(
             CareAssignment.id == assignment_id,
@@ -102,6 +118,8 @@ async def delete_assignment(session: AsyncSession, admin: User, assignment_id: u
     )
     if assignment is None:
         raise NotFoundError
+    if {assignment.clinician_id, assignment.client_id} <= protected_ids:
+        raise ConflictError(DEMO_PROTECTED_MESSAGE)
     await session.delete(assignment)
     await audit.record(
         session,

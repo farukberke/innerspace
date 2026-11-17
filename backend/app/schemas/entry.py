@@ -37,6 +37,8 @@ class _Strict(BaseModel):
 
 class QuickDetails(_Strict):
     mood: Annotated[int, Field(ge=1, le=5)] | None = None
+    # Last night's sleep as the client remembers it, in half-hour steps.
+    sleep_hours: Annotated[float, Field(ge=0, le=24, multiple_of=0.5)] | None = None
 
 
 class PanicDetails(_Strict):

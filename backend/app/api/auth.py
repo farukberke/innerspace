@@ -12,6 +12,8 @@ from app.api.deps import (
 )
 from app.core.ratelimit import parse_limit
 from app.schemas.care import (
+    DemoLoginRequest,
+    DemoLoginStatus,
     InvitationAccept,
     LoginRequest,
     RefreshRequest,
@@ -19,8 +21,8 @@ from app.schemas.care import (
     UserRead,
 )
 from app.services import auth as service
-from app.services import invitations
-from app.services.errors import InvalidCredentialsError, InvalidInvitationError
+from app.services import demo, invitations
+from app.services.errors import InvalidCredentialsError, InvalidInvitationError, NotFoundError
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -89,3 +91,21 @@ async def accept_invitation(
     except InvalidInvitationError:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Invalid or expired invitation") from None
     return UserRead.model_validate(user)
+
+
+@router.get("/demo-login")
+async def demo_login_status(settings: SettingsDep) -> DemoLoginStatus:
+    """Whether one-click demo sign-in is offered (the login page shows the buttons only then)."""
+    return DemoLoginStatus(enabled=settings.demo_login_enabled)
+
+
+@router.post("/demo-login", dependencies=[Depends(limit_per_ip("demo_login"))])
+async def demo_login(
+    session: SessionDep, settings: SettingsDep, data: Annotated[DemoLoginRequest, Body()]
+) -> TokenPair:
+    """Signs into the seeded demo-clinic account of the requested role (synthetic data only).
+    404 unless `DEMO_LOGIN_ENABLED` is on and the seeded account exists."""
+    try:
+        return _tokens(await demo.sign_in(session, settings, data.role))
+    except NotFoundError:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Demo login is not available") from None

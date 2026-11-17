@@ -154,8 +154,16 @@ def _entry_payload(rng: random.Random, kind: EntryKind) -> tuple[str | None, dic
             }
 
 
+def _sleep_hours(rng: random.Random, had_panic: bool) -> float:
+    """A plausible night (half-hour steps); nights before an attack skew shorter."""
+    low, high = (8, 12) if had_panic else (11, 16)
+    return rng.randint(low, high) / 2
+
+
 def _client_entries(rng: random.Random, client: User, now: datetime) -> list[Entry]:
     entries: list[Entry] = []
+    # Separate stream, so adding sleep did not change any other seeded value.
+    sleep_rng = random.Random(f"sleep-{client.email}")  # noqa: S311  (demo data)
     for days_ago in range(21, 0, -1):
         day = now - timedelta(days=days_ago)
         kinds = [EntryKind.MEDICATION]
@@ -167,6 +175,8 @@ def _client_entries(rng: random.Random, client: User, now: datetime) -> list[Ent
             kinds.append(EntryKind.AVOIDANCE)
         for kind in kinds:
             note, details = _entry_payload(rng, kind)
+            if kind == EntryKind.QUICK:
+                details["sleep_hours"] = _sleep_hours(sleep_rng, EntryKind.PANIC in kinds)
             entries.append(
                 Entry(
                     organization_id=client.organization_id,

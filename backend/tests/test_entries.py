@@ -30,6 +30,7 @@ async def _create(http: AsyncClient, body: dict[str, Any]) -> dict[str, Any]:
     "body",
     [
         _quick(details={"mood": 3}),
+        _quick(details={"mood": 2, "sleep_hours": 6.5}),
         {
             "kind": "panic",
             "occurred_at": _ts(1),
@@ -52,7 +53,7 @@ async def _create(http: AsyncClient, body: dict[str, Any]) -> dict[str, Any]:
             "details": {"situation": "dinner", "avoided": True, "anxiety": 6},
         },
     ],
-    ids=["quick", "panic", "medication", "avoidance"],
+    ids=["quick", "quick-sleep", "panic", "medication", "avoidance"],
 )
 async def test_create_each_kind(http, acting, client_a: User, body: dict[str, Any]) -> None:
     acting.user = client_a
@@ -70,6 +71,8 @@ async def test_create_each_kind(http, acting, client_a: User, body: dict[str, An
     [
         ({"kind": "panic", "occurred_at": _ts()}, "missing details"),
         ({"kind": "panic", "occurred_at": _ts(), "details": {"intensity": 11}}, "out of range"),
+        (_quick(details={"sleep_hours": 25}), "sleep out of range"),
+        (_quick(details={"sleep_hours": 6.3}), "sleep not in half hours"),
         (
             {
                 "kind": "panic",
