@@ -6,8 +6,6 @@ import type {
   Assignment,
   ClientRead,
   CrisisInfo,
-  DemoLoginStatus,
-  DemoRole,
   Entry,
   EntryInput,
   EntryKind,
@@ -40,12 +38,6 @@ export const authApi = {
       // network/server error: the caller still ends the local session
     }
   },
-  /** One-click demo sign-in to a seeded demo-clinic account (only where the backend enables it). */
-  async demoLogin(role: DemoRole): Promise<void> {
-    const pair = await request<TokenPair>('/auth/demo-login', { method: 'POST', body: { role }, auth: false })
-    tokens.set(pair)
-  },
-  demoStatus: () => request<DemoLoginStatus>('/auth/demo-login', { auth: false }),
   me: () => request<User>('/auth/me'),
   acceptInvitation: (token: string, password: string, display_name: string) =>
     request<User>('/auth/accept-invitation', { method: 'POST', body: { token, password, display_name }, auth: false }),

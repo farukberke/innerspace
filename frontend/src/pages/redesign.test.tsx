@@ -79,43 +79,6 @@ const entry = (kind: Entry['kind'], daysAgo: number, details: Record<string, unk
   updated_at: daysFromNow(-daysAgo, 9),
 })
 
-describe('one-click demo login', () => {
-  it('offers the three roles when the backend enables it and signs in as the chosen one', async () => {
-    const { calls } = mockFetch({
-      'GET /auth/demo-login': { body: { enabled: true } },
-      'POST /auth/demo-login': { body: pair },
-      'GET /auth/me': { body: user('clinician', 'Dr. Elif Kaya') },
-      'GET /clinician/clients': { body: [] },
-    })
-    renderAt('/login')
-    expect(await screen.findByRole('button', { name: /Danışan olarak dene/ })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Yönetici olarak dene/ })).toBeInTheDocument()
-    await userEvent.setup().click(screen.getByRole('button', { name: /Uzman olarak dene/ }))
-    expect(await screen.findByRole('heading', { name: 'Danışanlarım' })).toBeInTheDocument()
-    const login = calls.find((c) => c.key === 'POST /auth/demo-login')
-    expect(JSON.parse(String(login?.init.body))).toEqual({ role: 'clinician' })
-    expect(tokens.refresh).toBe('r')
-  })
-
-  it('shows only the password form when demo login is off or unknown', async () => {
-    mockFetch({ 'GET /auth/demo-login': { body: { enabled: false } } })
-    renderAt('/login')
-    expect(await screen.findByLabelText('E-posta')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /olarak dene/ })).not.toBeInTheDocument()
-  })
-
-  it('shows the error when the demo account is unavailable', async () => {
-    mockFetch({
-      'GET /auth/demo-login': { body: { enabled: true } },
-      'POST /auth/demo-login': { status: 404, body: { detail: 'Demo login is not available' } },
-    })
-    renderAt('/login')
-    await userEvent.setup().click(await screen.findByRole('button', { name: /Danışan olarak dene/ }))
-    expect(await screen.findByRole('alert')).toBeInTheDocument()
-    expect(tokens.refresh).toBeNull()
-  })
-})
-
 describe('client home', () => {
   it('shows the 21-day rhythm, the next appointment and the last summary', async () => {
     tokens.set(pair)

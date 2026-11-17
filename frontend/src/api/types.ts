@@ -30,12 +30,6 @@ export interface ClientRead {
   new_summaries: number
 }
 
-export type DemoRole = UserRole
-
-export interface DemoLoginStatus {
-  enabled: boolean
-}
-
 export interface InvitationCreated {
   id: string
   email: string

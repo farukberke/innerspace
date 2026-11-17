@@ -39,9 +39,6 @@ services:
         value: "1"
       - key: RATE_LIMIT_BACKEND
         value: redis
-      # Public demo: one-click sign-in to the seeded demo-clinic accounts (synthetic data only).
-      - key: DEMO_LOGIN_ENABLED
-        value: "true"
       - key: CELERY_CONCURRENCY # worker threads; keep low for the 512 MB instance
         value: "2"
       - key: MALLOC_ARENA_MAX # caps glibc per-thread arenas (threaded worker) to limit RSS growth

@@ -6,7 +6,6 @@ from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_vali
 
 from app.models import Summary, SummaryJobStatus, SummaryStatus, UserRole
 from app.schemas.planning import PlanContact
-from app.services.demo import DemoRole
 
 MAX_PERIOD_DAYS = 92
 
@@ -56,14 +55,6 @@ class ClientRead(BaseModel):
     last_shared_at: datetime | None = None
     # Shared summaries this clinician has not opened since they were (re)shared.
     new_summaries: int = 0
-
-
-class DemoLoginStatus(BaseModel):
-    enabled: bool
-
-
-class DemoLoginRequest(BaseModel):
-    role: DemoRole
 
 
 class InvitationCreate(BaseModel):

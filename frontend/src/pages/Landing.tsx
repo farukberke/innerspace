@@ -6,8 +6,6 @@ import { DemoBanner, Logo, SkipLink } from '../components/Layout'
 import { Mark, type MarkKind } from '../components/Mark'
 import { buttonCls, Spinner } from '../components/ui'
 
-const REPO_URL = 'https://github.com/farukberke/innerspace'
-
 /** Synthetic rendering of the product's own surfaces. Not interactive, labelled as an example. */
 const SAMPLE_DAYS: { sleep: number; attacks: number[] }[] = [
   [7, []], [6.5, []], [5, [6]], [7, []], [7.5, []], [6, []], [5.5, [8]], [6, []], [7, []], [7.5, []],
@@ -232,9 +230,6 @@ export function Landing() {
         <div className={`${wrap} flex flex-col gap-2 text-[0.9375rem] text-ink-2 sm:flex-row sm:justify-between`}>
           <p>InnerSpace · portföy projesi. Gerçek kişisel veya sağlık bilgisi girme.</p>
           <p>Tıbbi tavsiye vermez; teşhis veya tedavi aracı değildir.</p>
-          <a href={REPO_URL} className="link" rel="noreferrer">
-            Kaynak kod (GitHub)
-          </a>
         </div>
       </footer>
     </div>

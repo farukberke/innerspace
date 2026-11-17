@@ -1,14 +1,13 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { refreshSession, setSessionExpiredHandler, tokens } from '../api/client'
 import { authApi } from '../api/endpoints'
-import type { DemoRole, User } from '../api/types'
+import type { User } from '../api/types'
 
 type AuthState = { status: 'loading' } | { status: 'anon' } | { status: 'authed'; user: User }
 
 interface AuthContextValue {
   state: AuthState
   login: (email: string, password: string) => Promise<User>
-  demoLogin: (role: DemoRole) => Promise<User>
   logout: () => void
 }
 
@@ -46,13 +45,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return user
   }, [])
 
-  const demoLogin = useCallback(async (role: DemoRole) => {
-    await authApi.demoLogin(role)
-    const user = await authApi.me()
-    setState({ status: 'authed', user })
-    return user
-  }, [])
-
   const logout = useCallback(() => {
     const refresh = tokens.refresh
     tokens.clear()
@@ -60,7 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setState({ status: 'anon' })
   }, [])
 
-  const value = useMemo(() => ({ state, login, demoLogin, logout }), [state, login, demoLogin, logout])
+  const value = useMemo(() => ({ state, login, logout }), [state, login, logout])
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 

@@ -7,7 +7,7 @@
 > [!WARNING]
 > **Portfolio project, synthetic data only.** InnerSpace is not a medical device, does not diagnose, and does not provide treatment or crisis support. Do not enter real personal or health information. If you are in crisis, contact your local emergency number (112 in Türkiye).
 
-**Live demo:** https://innerspace-web.onrender.com (Turkish UI). On the sign-in page, choose **Danışan / Uzman / Yönetici olarak dene** to enter as the synthetic client, clinician or clinic admin with one click. The free instance may take a minute to wake up.
+**Live demo:** https://innerspace-web.onrender.com (Turkish UI). Demo accounts (synthetic client, clinician and clinic admin) are available on request. The free instance may take a minute to wake up.
 
 ## Screenshots
 
@@ -17,7 +17,7 @@
 |---|---|
 | ![Client home: next appointment, 21-day sleep and attack rhythm, last summary](assets/screenshots/client-home.png) | ![Client view of a shared summary; each statement opens the client's own source entries](assets/screenshots/client-summary.png) |
 | ![Clinician client list with new-summary markers and last share dates](assets/screenshots/clinician-clients.png) | ![Clinician view of a summary the client chose to share](assets/screenshots/clinician-summary.png) |
-| ![Landing page](assets/screenshots/landing.png) | ![Sign-in with one-click demo roles](assets/screenshots/login.png) |
+| ![Landing page](assets/screenshots/landing.png) | ![Sign-in](assets/screenshots/login.png) |
 | ![Client entries, each kind with its own mark](assets/screenshots/client-entries.png) | ![Clinician view of one client: shared summaries, plan and appointments](assets/screenshots/clinician-client-detail.png) |
 | ![Client support plan editor](assets/screenshots/client-plan.png) | ![Clinic admin user management](assets/screenshots/admin-users.png) |
 
@@ -45,7 +45,6 @@ The visual language borrows from 1960s-80s Istanbul graphic modernism: a cobalt 
 - The client list shows each client's last share date and how many shared summaries are new (not opened since they were shared or re-shared), with a direct link to the newest one. Opening a summary records a content-free read receipt.
 
 **Demo sign-in**
-- With `DEMO_LOGIN_ENABLED=true` (the public demo only), `POST /api/v1/auth/demo-login {"role": "client" | "clinician" | "org_admin"}` signs into the seeded `demo-clinic` account of that role. No password is involved or shipped to the browser; it is rate limited per IP and audited (`auth.demo_login`), works for no other account, and while enabled the demo admin cannot deactivate the demo accounts or remove their assignment. Off by default.
 
 **Clinic admin (`org_admin`)**
 - Invites users, activates/deactivates them and manages clinician-client assignments. Sees no clinical content.
@@ -150,7 +149,6 @@ uv sync
 uv run pre-commit install     # secret scanning and lint checks before each commit
 uv run alembic upgrade head
 uv run python -m app.seed     # synthetic demo data; prints a random password unless SEED_PASSWORD is set
-                              # DEMO_LOGIN_ENABLED=true in .env adds the one-click demo buttons
 uv run uvicorn app.main:create_app --factory --reload
 ```
 
@@ -170,7 +168,7 @@ Render Blueprint (`render.yaml`): one web service running the API plus a thread-
 
 ## Project status
 
-Phases 0-8 are complete: repository and tooling, backend foundation, authentication and authorization, AI summaries, background jobs, evaluation and observability, Docker/CI/Render, appointments and support plan, and topics, reminders, data export and deletion. The React frontend covers client, clinician and clinic-admin screens; it was redesigned afterwards (new visual identity, client home, clinician sharing status, one-click demo sign-in).
+Phases 0-8 are complete: repository and tooling, backend foundation, authentication and authorization, AI summaries, background jobs, evaluation and observability, Docker/CI/Render, appointments and support plan, and topics, reminders, data export and deletion. The React frontend covers client, clinician and clinic-admin screens; it was redesigned afterwards (new visual identity, client home, clinician sharing status).
 
 ## License
 
